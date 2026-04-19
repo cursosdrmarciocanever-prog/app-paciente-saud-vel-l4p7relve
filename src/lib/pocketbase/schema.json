@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T00:32:59.832Z",
+  "generatedAt": "2026-04-19T00:46:26.485Z",
   "collections": [
     {
       "name": "users",
@@ -37,6 +37,24 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "weekly_goal",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "daily_goal_minutes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "is_paid",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -133,6 +151,59 @@
           "required": true,
           "system": false,
           "selectValues": ["Frente", "Lado", "Costas"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "physical_activity",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != '' && user = @request.auth.id",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "duration_minutes",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "activity_type",
+          "type": "text",
+          "required": false,
+          "system": false
         },
         {
           "name": "created",

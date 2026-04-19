@@ -1,7 +1,6 @@
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
-import { MOCK_ACTIVITY } from '@/lib/mock-data'
 import { Activity } from 'lucide-react'
 
 const chartConfig = {
@@ -11,7 +10,7 @@ const chartConfig = {
   },
 }
 
-export function ActivityChart() {
+export function ActivityChart({ data }: { data: any[] }) {
   return (
     <Card className="h-full border-border/50 shadow-sm flex flex-col">
       <CardHeader className="pb-2">
@@ -24,7 +23,7 @@ export function ActivityChart() {
       <CardContent className="flex-1 min-h-[250px]">
         <ChartContainer config={chartConfig} className="w-full h-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={MOCK_ACTIVITY} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
               <XAxis
                 dataKey="day"

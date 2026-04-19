@@ -13,14 +13,30 @@ import { AuthProvider, useAuth } from './hooks/use-auth'
 import Login from './pages/Login'
 import Bioimpedance from './pages/Bioimpedance'
 import Photos from './pages/Photos'
+import Register from './pages/Register'
+import PaymentPending from './pages/PaymentPending'
+import Settings from './pages/Settings'
 
-const ProtectedRoutes = () => {
+const AppRoutes = () => {
   const { user, loading } = useAuth()
 
   if (loading) return null
 
   if (!user) {
-    return <Login />
+    return (
+      <Routes>
+        <Route path="/register" element={<Register />} />
+        <Route path="*" element={<Login />} />
+      </Routes>
+    )
+  }
+
+  if (user.is_paid === false) {
+    return (
+      <Routes>
+        <Route path="*" element={<PaymentPending />} />
+      </Routes>
+    )
   }
 
   return (
@@ -33,6 +49,7 @@ const ProtectedRoutes = () => {
         <Route path="/consultas" element={<Appointments />} />
         <Route path="/bioimpedancia" element={<Bioimpedance />} />
         <Route path="/fotos" element={<Photos />} />
+        <Route path="/configuracoes" element={<Settings />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
@@ -45,7 +62,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <ProtectedRoutes />
+        <AppRoutes />
       </TooltipProvider>
     </BrowserRouter>
   </AuthProvider>

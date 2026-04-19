@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import logoImg from '@/assets/logo-branco-dourado-2-229cd.png'
@@ -60,6 +61,12 @@ export default function Login() {
               {loading ? 'Entrando...' : 'Entrar na Plataforma'}
             </Button>
           </form>
+          <div className="mt-6 text-center text-sm">
+            Não tem uma conta?{' '}
+            <Link to="/register" className="text-primary hover:underline font-medium">
+              Cadastrar-se
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
