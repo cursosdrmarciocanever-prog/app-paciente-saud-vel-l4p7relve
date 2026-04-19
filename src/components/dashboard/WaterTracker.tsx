@@ -32,20 +32,20 @@ export function WaterTracker() {
     <Card className="h-full border-border/50 shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Droplet className="w-5 h-5 text-blue-500 fill-blue-500/20" />
+          <Droplet className="w-5 h-5 text-primary fill-primary/20" />
           Hidratação Diária
         </CardTitle>
         <CardDescription>Sua meta é de {goal}ml por dia</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center justify-center space-y-6 mt-2">
-          <div className="relative flex items-center justify-center w-32 h-32 rounded-full border-8 border-blue-500/10">
+          <div className="relative flex items-center justify-center w-32 h-32 rounded-full border-8 border-primary/10">
             <div
-              className="absolute bottom-0 w-full bg-blue-500/20 rounded-b-full transition-all duration-500 ease-out"
+              className="absolute bottom-0 w-full bg-primary/20 rounded-b-full transition-all duration-500 ease-out"
               style={{ height: `${percentage}%` }}
             />
             <div className="text-center z-10">
-              <span className="text-3xl font-bold text-blue-600">{percentage}%</span>
+              <span className="text-3xl font-bold text-primary">{percentage}%</span>
             </div>
           </div>
 
@@ -54,17 +54,10 @@ export function WaterTracker() {
               <span>{water}ml ingeridos</span>
               <span>{goal}ml</span>
             </div>
-            <Progress
-              value={percentage}
-              className="h-2 bg-blue-100 dark:bg-blue-950 [&>div]:bg-blue-500"
-            />
+            <Progress value={percentage} className="h-2 bg-primary/20 [&>div]:bg-primary" />
           </div>
 
-          <Button
-            onClick={addWater}
-            disabled={water >= goal}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-          >
+          <Button onClick={addWater} disabled={water >= goal} className="w-full">
             <Plus className="w-4 h-4 mr-2" />
             Adicionar Copo (250ml)
           </Button>

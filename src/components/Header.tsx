@@ -2,7 +2,8 @@ import { Bell } from 'lucide-react'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useLocation } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
+import logoImg from '@/assets/logo-branco-dourado-2-229cd.png'
 
 const routeNames: Record<string, string> = {
   '/': 'Dashboard',
@@ -19,7 +20,12 @@ export function Header() {
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-4 border-b border-border/50 bg-background/80 backdrop-blur-xl px-4 md:px-6">
       <SidebarTrigger className="-ml-2 md:hidden" />
-      <h1 className="text-lg md:text-xl font-bold text-foreground flex-1 tracking-tight truncate">
+      <div className="md:hidden flex-1 flex items-center justify-center">
+        <Link to="/">
+          <img src={logoImg} alt="Clínica Canever" className="h-7 object-contain" />
+        </Link>
+      </div>
+      <h1 className="text-lg md:text-xl font-bold text-foreground flex-1 tracking-tight truncate hidden md:block">
         {title}
       </h1>
       <div className="flex items-center gap-3">

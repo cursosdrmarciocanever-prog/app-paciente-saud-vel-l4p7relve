@@ -11,6 +11,7 @@ import {
   SidebarHeader,
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
+import logoImg from '@/assets/logo-branco-dourado-2-229cd.png'
 
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
@@ -26,11 +27,11 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 flex items-center justify-center border-b border-border/50">
-        <Link to="/" className="font-bold text-xl text-primary flex items-center gap-3 w-full pl-2">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm">
-            <span className="text-primary-foreground text-lg leading-none">S</span>
-          </div>
-          <span className="tracking-tight text-foreground">Saudável</span>
+        <Link
+          to="/"
+          className="w-full flex justify-center py-2 transition-opacity hover:opacity-90"
+        >
+          <img src={logoImg} alt="Clínica Canever" className="h-10 object-contain" />
         </Link>
       </SidebarHeader>
       <SidebarContent>
