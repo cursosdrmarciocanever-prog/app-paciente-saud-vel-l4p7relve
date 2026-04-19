@@ -1,4 +1,12 @@
-import { LayoutDashboard, TrendingDown, Utensils, BookOpen, CalendarDays } from 'lucide-react'
+import {
+  LayoutDashboard,
+  TrendingDown,
+  Utensils,
+  BookOpen,
+  CalendarDays,
+  Activity,
+  Image as ImageIcon,
+} from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   Sidebar,
@@ -16,6 +24,8 @@ import logoImg from '@/assets/logo-branco-dourado-2-229cd.png'
 const navItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Evolução', url: '/evolucao', icon: TrendingDown },
+  { title: 'Bioimpedância', url: '/bioimpedancia', icon: Activity },
+  { title: 'Galeria de Fotos', url: '/fotos', icon: ImageIcon },
   { title: 'Alimentação', url: '/alimentacao', icon: Utensils },
   { title: 'Biblioteca', url: '/biblioteca', icon: BookOpen },
   { title: 'Consultas e Perfil', url: '/consultas', icon: CalendarDays },
