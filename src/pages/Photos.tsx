@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { format } from 'date-fns'
-import { Image as ImageIcon, Plus, X } from 'lucide-react'
+import { Image as ImageIcon, Plus, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 
@@ -41,6 +41,7 @@ export default function Photos() {
   const [date, setDate] = useState('')
   const [angle, setAngle] = useState<'Frente' | 'Lado' | 'Costas' | ''>('')
   const [file, setFile] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const loadData = async () => {
     try {
@@ -78,9 +79,23 @@ export default function Photos() {
       return
     }
 
+    if (file.size > 5242880) {
+      setErrors({ photo: 'A imagem não pode exceder 5MB' })
+      return
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png']
+    if (!allowedTypes.includes(file.type)) {
+      setErrors({ photo: 'Formato de imagem inválido. Apenas JPG ou PNG são aceitos.' })
+      return
+    }
+
+    setIsSubmitting(true)
+
     const formData = new FormData()
     formData.append('user', user.id)
-    formData.append('date', new Date(date).toISOString())
+    // Para evitar problemas de fuso horário, definimos a hora para o meio-dia UTC
+    formData.append('date', new Date(`${date}T12:00:00Z`).toISOString())
     formData.append('angle', angle)
     formData.append('photo', file)
 
@@ -95,8 +110,10 @@ export default function Photos() {
       const fieldErrors = extractFieldErrors(err)
       setErrors(fieldErrors)
       if (Object.keys(fieldErrors).length === 0) {
-        toast.error('Erro ao salvar registro.')
+        toast.error('Erro ao salvar registro. Verifique sua conexão e tente novamente.')
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -108,7 +125,18 @@ export default function Photos() {
           <h1 className="text-2xl font-bold tracking-tight">Galeria de Fotos</h1>
         </div>
 
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+          open={open}
+          onOpenChange={(val) => {
+            setOpen(val)
+            if (!val) {
+              setDate('')
+              setAngle('')
+              setFile(null)
+              setErrors({})
+            }
+          }}
+        >
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
@@ -127,12 +155,17 @@ export default function Photos() {
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
+                  disabled={isSubmitting}
                 />
                 {errors.date && <p className="text-sm text-destructive">{errors.date}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Ângulo</Label>
-                <Select value={angle} onValueChange={(val: any) => setAngle(val)}>
+                <Select
+                  value={angle}
+                  onValueChange={(val: any) => setAngle(val)}
+                  disabled={isSubmitting}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione o ângulo" />
                   </SelectTrigger>
@@ -149,13 +182,22 @@ export default function Photos() {
                 <Input
                   id="photo"
                   type="file"
-                  accept="image/jpeg,image/png"
+                  key={file ? file.name : 'empty'}
+                  accept="image/jpeg,image/png,.jpg,.jpeg,.png"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  disabled={isSubmitting}
                 />
                 {errors.photo && <p className="text-sm text-destructive">{errors.photo}</p>}
               </div>
-              <Button type="submit" className="w-full">
-                Salvar Foto
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Enviando foto...
+                  </>
+                ) : (
+                  'Salvar Foto'
+                )}
               </Button>
             </form>
           </DialogContent>

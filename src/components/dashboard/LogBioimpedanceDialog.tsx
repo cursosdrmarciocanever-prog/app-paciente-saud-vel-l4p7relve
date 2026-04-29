@@ -60,7 +60,8 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
 
     const formData = new FormData()
     formData.append('user', user.id)
-    formData.append('date', new Date(date).toISOString())
+    // Para evitar problemas de fuso horário, definimos a hora para o meio-dia UTC
+    formData.append('date', new Date(`${date}T12:00:00Z`).toISOString())
     formData.append('notes', notes)
 
     if (file) {
@@ -76,7 +77,7 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
       const fieldErrors = extractFieldErrors(err)
       setErrors(fieldErrors)
       if (Object.keys(fieldErrors).length === 0) {
-        toast.error('Ocorreu um erro ao salvar o arquivo. Tente novamente mais tarde.')
+        toast.error('Ocorreu um erro ao salvar o arquivo. Verifique sua conexão e tente novamente.')
       }
     } finally {
       setIsSubmitting(false)
