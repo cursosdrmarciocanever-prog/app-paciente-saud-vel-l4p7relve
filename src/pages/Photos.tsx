@@ -79,8 +79,11 @@ export default function Photos() {
       return
     }
 
-    if (file.size > 5242880) {
-      setErrors({ photo: 'O arquivo é muito grande. O limite máximo é 5MB.' })
+    if (file.size > 20971520) {
+      setErrors({
+        photo:
+          'O arquivo selecionado é muito grande (máximo 20MB). Por favor, escolha um arquivo menor.',
+      })
       return
     }
 
@@ -99,19 +102,29 @@ export default function Photos() {
     formData.append('angle', angle)
     formData.append('photo', file)
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 60000)
+
     try {
-      await createEvolutionPhoto(formData)
+      await createEvolutionPhoto(formData, {
+        requestKey: null,
+        fetch: (url: any, config: any) => fetch(url, { ...config, signal: controller.signal }),
+      })
+      clearTimeout(timeoutId)
       toast.success('Upload concluído com sucesso!')
       setOpen(false)
       setDate('')
       setAngle('')
       setFile(null)
     } catch (err: any) {
+      clearTimeout(timeoutId)
       const fieldErrors = extractFieldErrors(err)
       setErrors(fieldErrors)
       if (Object.keys(fieldErrors).length === 0) {
-        if (err.status === 0 || err.status === 503 || err.isAbort) {
-          toast.error('Aparece erro ao conectar. Verifique a sua conexão e tente novamente.')
+        if (err.isAbort || err.name === 'AbortError') {
+          toast.error('O tempo de carregamento expirou. Verifique sua conexão e tente novamente.')
+        } else if (err.status === 0 || err.status === 503) {
+          toast.error('O tempo de carregamento expirou. Verifique sua conexão e tente novamente.')
         } else {
           toast.error(err.message || 'Ocorreu um erro inesperado.')
         }
@@ -188,12 +201,28 @@ export default function Photos() {
                   type="file"
                   key={file ? file.name : 'empty'}
                   accept="image/jpeg,image/png,.jpg,.jpeg,.png"
-                  onChange={(e) => setFile(e.target.files?.[0] || null)}
+                  onChange={(e) => {
+                    const selectedFile = e.target.files?.[0] || null
+                    setFile(selectedFile)
+                    if (selectedFile && selectedFile.size > 20971520) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        photo:
+                          'O arquivo selecionado é muito grande (máximo 20MB). Por favor, escolha um arquivo menor.',
+                      }))
+                    } else {
+                      setErrors((prev) => {
+                        const newErrors = { ...prev }
+                        delete newErrors.photo
+                        return newErrors
+                      })
+                    }
+                  }}
                   disabled={isSubmitting}
                 />
                 {errors.photo && <p className="text-sm text-destructive">{errors.photo}</p>}
               </div>
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full" disabled={isSubmitting || !!errors.photo}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />

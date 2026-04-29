@@ -44,8 +44,11 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
     }
 
     if (file) {
-      if (file.size > 5242880) {
-        setErrors({ report: 'O arquivo é muito grande. O limite máximo é 5MB.' })
+      if (file.size > 20971520) {
+        setErrors({
+          report:
+            'O arquivo selecionado é muito grande (máximo 20MB). Por favor, escolha um arquivo menor.',
+        })
         return
       }
 
@@ -68,17 +71,27 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
       formData.append('report', file)
     }
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 60000)
+
     try {
-      await createBioimpedance(formData)
+      await createBioimpedance(formData, {
+        requestKey: null,
+        fetch: (url: any, config: any) => fetch(url, { ...config, signal: controller.signal }),
+      })
+      clearTimeout(timeoutId)
       toast.success('Upload concluído com sucesso!')
       setOpen(false)
       resetForm()
     } catch (err: any) {
+      clearTimeout(timeoutId)
       const fieldErrors = extractFieldErrors(err)
       setErrors(fieldErrors)
       if (Object.keys(fieldErrors).length === 0) {
-        if (err.status === 0 || err.status === 503 || err.isAbort) {
-          toast.error('Aparece erro ao conectar. Verifique a sua conexão e tente novamente.')
+        if (err.isAbort || err.name === 'AbortError') {
+          toast.error('O tempo de carregamento expirou. Verifique sua conexão e tente novamente.')
+        } else if (err.status === 0 || err.status === 503) {
+          toast.error('O tempo de carregamento expirou. Verifique sua conexão e tente novamente.')
         } else {
           toast.error(err.message || 'Ocorreu um erro inesperado.')
         }
@@ -128,7 +141,23 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
               type="file"
               key={file ? file.name : 'empty'}
               accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                const selectedFile = e.target.files?.[0] || null
+                setFile(selectedFile)
+                if (selectedFile && selectedFile.size > 20971520) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    report:
+                      'O arquivo selecionado é muito grande (máximo 20MB). Por favor, escolha um arquivo menor.',
+                  }))
+                } else {
+                  setErrors((prev) => {
+                    const newErrors = { ...prev }
+                    delete newErrors.report
+                    return newErrors
+                  })
+                }
+              }}
               disabled={isSubmitting}
             />
             {errors.report && <p className="text-sm text-destructive">{errors.report}</p>}
@@ -144,7 +173,7 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
             />
             {errors.notes && <p className="text-sm text-destructive">{errors.notes}</p>}
           </div>
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
+          <Button type="submit" className="w-full" disabled={isSubmitting || !!errors.report}>
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

@@ -13,8 +13,8 @@ export interface BioimpedanceRecord {
 export const getBioimpedances = () =>
   pb.collection('bioimpedance').getFullList<BioimpedanceRecord>({ sort: '-date' })
 
-export const createBioimpedance = (data: FormData) =>
-  pb.collection('bioimpedance').create<BioimpedanceRecord>(data)
+export const createBioimpedance = (data: FormData, options?: any) =>
+  pb.collection('bioimpedance').create<BioimpedanceRecord>(data, options)
 
 export const getFileUrl = (recordId: string, fileName: string) => {
   if (!fileName) return ''

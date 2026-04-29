@@ -13,8 +13,8 @@ export interface EvolutionPhotoRecord {
 export const getEvolutionPhotos = () =>
   pb.collection('evolution_photos').getFullList<EvolutionPhotoRecord>({ sort: '-date' })
 
-export const createEvolutionPhoto = (data: FormData) =>
-  pb.collection('evolution_photos').create<EvolutionPhotoRecord>(data)
+export const createEvolutionPhoto = (data: FormData, options?: any) =>
+  pb.collection('evolution_photos').create<EvolutionPhotoRecord>(data, options)
 
 export const getPhotoUrl = (recordId: string, fileName: string) => {
   if (!fileName) return ''
