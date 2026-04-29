@@ -44,8 +44,8 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
     }
 
     if (file) {
-      if (file.size > 10485760) {
-        setErrors({ report: 'O arquivo não pode exceder 10MB' })
+      if (file.size > 5242880) {
+        setErrors({ report: 'O arquivo é muito grande. O limite máximo é 5MB.' })
         return
       }
 
@@ -70,14 +70,18 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
 
     try {
       await createBioimpedance(formData)
-      toast.success('Avaliação de bioimpedância salva com sucesso!')
+      toast.success('Upload concluído com sucesso!')
       setOpen(false)
       resetForm()
-    } catch (err) {
+    } catch (err: any) {
       const fieldErrors = extractFieldErrors(err)
       setErrors(fieldErrors)
       if (Object.keys(fieldErrors).length === 0) {
-        toast.error('Ocorreu um erro ao salvar o arquivo. Verifique sua conexão e tente novamente.')
+        if (err.status === 0 || err.status === 503 || err.isAbort) {
+          toast.error('Aparece erro ao conectar. Verifique a sua conexão e tente novamente.')
+        } else {
+          toast.error(err.message || 'Ocorreu um erro inesperado.')
+        }
       }
     } finally {
       setIsSubmitting(false)

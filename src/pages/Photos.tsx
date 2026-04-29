@@ -80,7 +80,7 @@ export default function Photos() {
     }
 
     if (file.size > 5242880) {
-      setErrors({ photo: 'A imagem não pode exceder 5MB' })
+      setErrors({ photo: 'O arquivo é muito grande. O limite máximo é 5MB.' })
       return
     }
 
@@ -101,16 +101,20 @@ export default function Photos() {
 
     try {
       await createEvolutionPhoto(formData)
-      toast.success('Foto adicionada com sucesso!')
+      toast.success('Upload concluído com sucesso!')
       setOpen(false)
       setDate('')
       setAngle('')
       setFile(null)
-    } catch (err) {
+    } catch (err: any) {
       const fieldErrors = extractFieldErrors(err)
       setErrors(fieldErrors)
       if (Object.keys(fieldErrors).length === 0) {
-        toast.error('Erro ao salvar registro. Verifique sua conexão e tente novamente.')
+        if (err.status === 0 || err.status === 503 || err.isAbort) {
+          toast.error('Aparece erro ao conectar. Verifique a sua conexão e tente novamente.')
+        } else {
+          toast.error(err.message || 'Ocorreu um erro inesperado.')
+        }
       }
     } finally {
       setIsSubmitting(false)
