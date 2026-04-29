@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/use-auth'
 import pb from '@/lib/pocketbase/client'
 import { useRealtime } from '@/hooks/use-realtime'
 import { LogActivityDialog } from '@/components/dashboard/LogActivityDialog'
+import { LogBioimpedanceDialog } from '@/components/dashboard/LogBioimpedanceDialog'
 import { format, subDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Target, Settings as SettingsIcon, Trophy, Sparkles } from 'lucide-react'
@@ -197,6 +198,7 @@ export default function Dashboard() {
       <div className="flex justify-between items-center">
         <h3 className="text-xl font-bold tracking-tight">Resumo Semanal</h3>
         <div className="flex gap-2">
+          {user && <LogBioimpedanceDialog />}
           {user && <LogActivityDialog userId={user.id} />}
           <Button variant="outline" size="icon" asChild>
             <Link to="/configuracoes">
