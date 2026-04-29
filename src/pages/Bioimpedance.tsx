@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { format } from 'date-fns'
-import { FileText, Download, Activity, Plus } from 'lucide-react'
+import { FileText, Download, Activity, Plus, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 
@@ -34,6 +34,7 @@ export default function Bioimpedance() {
   const [date, setDate] = useState('')
   const [notes, setNotes] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const loadData = async () => {
     try {
@@ -63,6 +64,13 @@ export default function Bioimpedance() {
       return
     }
 
+    if (file && file.size > 10485760) {
+      setErrors({ report: 'O arquivo não pode exceder 10MB' })
+      return
+    }
+
+    setIsSubmitting(true)
+
     const formData = new FormData()
     formData.append('user', user.id)
     formData.append('date', new Date(date).toISOString())
@@ -84,6 +92,8 @@ export default function Bioimpedance() {
       if (Object.keys(fieldErrors).length === 0) {
         toast.error('Erro ao salvar registro.')
       }
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -137,8 +147,15 @@ export default function Bioimpedance() {
                 />
                 {errors.notes && <p className="text-sm text-destructive">{errors.notes}</p>}
               </div>
-              <Button type="submit" className="w-full">
-                Salvar Registro
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  'Salvar Registro'
+                )}
               </Button>
             </form>
           </DialogContent>
