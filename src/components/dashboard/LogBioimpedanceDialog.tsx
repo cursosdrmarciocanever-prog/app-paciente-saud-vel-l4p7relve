@@ -46,15 +46,16 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
     if (file) {
       if (file.size > 20971520) {
         setErrors({
-          report:
-            'O arquivo selecionado é muito grande (máximo 20MB). Por favor, escolha um arquivo menor.',
+          report: 'O arquivo selecionado é muito grande. O limite máximo permitido é de 20MB.',
         })
         return
       }
 
       const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png']
       if (!allowedTypes.includes(file.type)) {
-        setErrors({ report: 'Formato de arquivo inválido. Apenas PDF, JPG ou PNG são aceitos.' })
+        setErrors({
+          report: 'Formato de arquivo não suportado. Por favor, envie um PDF ou imagem (PNG/JPG).',
+        })
         return
       }
     }
@@ -89,9 +90,13 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
       setErrors(fieldErrors)
       if (Object.keys(fieldErrors).length === 0) {
         if (err.isAbort || err.name === 'AbortError') {
-          toast.error('O tempo de carregamento expirou. Verifique sua conexão e tente novamente.')
+          toast.error(
+            'O tempo de conexão expirou. Por favor, tente novamente com uma conexão mais estável.',
+          )
         } else if (err.status === 0 || err.status === 503) {
-          toast.error('O tempo de carregamento expirou. Verifique sua conexão e tente novamente.')
+          toast.error(
+            'O tempo de conexão expirou. Por favor, tente novamente com uma conexão mais estável.',
+          )
         } else {
           toast.error(err.message || 'Ocorreu um erro inesperado.')
         }
@@ -148,7 +153,7 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
                   setErrors((prev) => ({
                     ...prev,
                     report:
-                      'O arquivo selecionado é muito grande (máximo 20MB). Por favor, escolha um arquivo menor.',
+                      'O arquivo selecionado é muito grande. O limite máximo permitido é de 20MB.',
                   }))
                 } else {
                   setErrors((prev) => {

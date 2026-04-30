@@ -81,15 +81,16 @@ export default function Photos() {
 
     if (file.size > 20971520) {
       setErrors({
-        photo:
-          'O arquivo selecionado é muito grande (máximo 20MB). Por favor, escolha um arquivo menor.',
+        photo: 'O arquivo selecionado é muito grande. O limite máximo permitido é de 20MB.',
       })
       return
     }
 
     const allowedTypes = ['image/jpeg', 'image/png']
     if (!allowedTypes.includes(file.type)) {
-      setErrors({ photo: 'Formato de imagem inválido. Apenas JPG ou PNG são aceitos.' })
+      setErrors({
+        photo: 'Formato de arquivo não suportado. Por favor, envie um PDF ou imagem (PNG/JPG).',
+      })
       return
     }
 
@@ -122,9 +123,13 @@ export default function Photos() {
       setErrors(fieldErrors)
       if (Object.keys(fieldErrors).length === 0) {
         if (err.isAbort || err.name === 'AbortError') {
-          toast.error('O tempo de carregamento expirou. Verifique sua conexão e tente novamente.')
+          toast.error(
+            'O tempo de conexão expirou. Por favor, tente novamente com uma conexão mais estável.',
+          )
         } else if (err.status === 0 || err.status === 503) {
-          toast.error('O tempo de carregamento expirou. Verifique sua conexão e tente novamente.')
+          toast.error(
+            'O tempo de conexão expirou. Por favor, tente novamente com uma conexão mais estável.',
+          )
         } else {
           toast.error(err.message || 'Ocorreu um erro inesperado.')
         }
@@ -208,7 +213,7 @@ export default function Photos() {
                       setErrors((prev) => ({
                         ...prev,
                         photo:
-                          'O arquivo selecionado é muito grande (máximo 20MB). Por favor, escolha um arquivo menor.',
+                          'O arquivo selecionado é muito grande. O limite máximo permitido é de 20MB.',
                       }))
                     } else {
                       setErrors((prev) => {
