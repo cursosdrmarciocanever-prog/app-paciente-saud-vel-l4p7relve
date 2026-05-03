@@ -36,13 +36,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await pb.collection('users').create({
         email: data.email,
         password: data.password,
-        passwordConfirm: data.password,
+        passwordConfirm: data.passwordConfirm || data.password,
         name: data.name,
-        weekly_goal: data.weekly_goal,
-        daily_goal_minutes: data.daily_goal_minutes,
+        weekly_goal: data.weekly_goal || 3,
+        daily_goal_minutes: data.daily_goal_minutes || 30,
         is_paid: false,
       })
-      await pb.collection('users').authWithPassword(data.email, data.password)
       return { error: null }
     } catch (error) {
       return { error }
