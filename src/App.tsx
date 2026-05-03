@@ -31,14 +31,6 @@ const AppRoutes = () => {
     )
   }
 
-  if (user.is_paid === false) {
-    return (
-      <Routes>
-        <Route path="*" element={<PaymentPending />} />
-      </Routes>
-    )
-  }
-
   return (
     <Routes>
       <Route element={<Layout />}>
@@ -50,6 +42,7 @@ const AppRoutes = () => {
         <Route path="/bioimpedancia" element={<Bioimpedance />} />
         <Route path="/fotos" element={<Photos />} />
         <Route path="/configuracoes" element={<Settings />} />
+        <Route path="/planos" element={<PaymentPending />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

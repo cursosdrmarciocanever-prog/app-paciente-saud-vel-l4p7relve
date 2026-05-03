@@ -30,6 +30,7 @@ import { format } from 'date-fns'
 import { Image as ImageIcon, Plus, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
+import { LockedFeature } from '@/components/LockedFeature'
 
 export default function Photos() {
   const { user } = useAuth()
@@ -63,6 +64,10 @@ export default function Photos() {
   useRealtime('evolution_photos', () => {
     loadData()
   })
+
+  if (!user?.is_paid) {
+    return <LockedFeature title="Galeria de Fotos" />
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

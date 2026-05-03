@@ -7,8 +7,11 @@ import { format } from 'date-fns'
 import { FileText, Download, Activity, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { LogBioimpedanceDialog } from '@/components/dashboard/LogBioimpedanceDialog'
+import { useAuth } from '@/hooks/use-auth'
+import { LockedFeature } from '@/components/LockedFeature'
 
 export default function Bioimpedance() {
+  const { user } = useAuth()
   const [records, setRecords] = useState<BioimpedanceRecord[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -28,8 +31,12 @@ export default function Bioimpedance() {
   }, [])
 
   useRealtime('bioimpedance', () => {
-    loadData()
+    if (user?.is_paid) loadData()
   })
+
+  if (!user?.is_paid) {
+    return <LockedFeature title="Bioimpedância" />
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 animate-fade-in">

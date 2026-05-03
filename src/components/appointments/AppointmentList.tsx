@@ -1,64 +1,86 @@
-import { MOCK_APPOINTMENTS } from '@/lib/mock-data'
+import { useEffect, useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Clock, Video, MapPin } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Clock, Loader2 } from 'lucide-react'
+import { getAppointments, AppointmentRecord } from '@/services/appointments'
+import { format, parseISO } from 'date-fns'
 
 export function AppointmentList() {
+  const [appointments, setAppointments] = useState<AppointmentRecord[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const loadData = () => {
+    getAppointments()
+      .then((data) => {
+        setAppointments(data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadData()
+    window.addEventListener('appointments-updated', loadData)
+    return () => window.removeEventListener('appointments-updated', loadData)
+  }, [])
+
+  if (loading)
+    return (
+      <div className="flex justify-center p-4">
+        <Loader2 className="w-6 h-6 animate-spin" />
+      </div>
+    )
+
+  if (appointments.length === 0) {
+    return (
+      <div className="text-center p-8 border border-dashed rounded-lg text-muted-foreground">
+        Nenhuma consulta agendada.
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4">
-      {MOCK_APPOINTMENTS.map((apt) => (
-        <Card key={apt.id} className="border-border/50 shadow-sm overflow-hidden">
-          <div
-            className={`h-1 w-full ${apt.status === 'Confirmado' ? 'bg-primary' : 'bg-amber-400'}`}
-          />
-          <CardContent className="p-5 flex flex-col md:flex-row gap-6 md:items-center justify-between">
-            <div className="flex items-start gap-4">
-              <div className="bg-muted rounded-xl p-3 text-center min-w-[70px] shrink-0 border">
-                <span className="block text-xs font-semibold text-muted-foreground uppercase">
-                  {apt.date.split('/')[1]}
-                </span>
-                <span className="block text-2xl font-bold">{apt.date.split('/')[0]}</span>
-              </div>
-              <div>
-                <h4 className="font-bold text-lg">{apt.doctor}</h4>
-                <p className="text-muted-foreground">{apt.type}</p>
-                <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground font-medium">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" /> {apt.time}
+      {appointments.map((apt) => {
+        const dateObj = parseISO(apt.date)
+        const isConfirmed = apt.status === 'Confirmado'
+        return (
+          <Card key={apt.id} className="border-border/50 shadow-sm overflow-hidden">
+            <div
+              className={`h-1 w-full ${isConfirmed ? 'bg-primary' : apt.status === 'Cancelado' ? 'bg-destructive' : 'bg-amber-400'}`}
+            />
+            <CardContent className="p-5 flex flex-col md:flex-row gap-6 md:items-center justify-between">
+              <div className="flex items-start gap-4">
+                <div className="bg-muted rounded-xl p-3 text-center min-w-[70px] shrink-0 border">
+                  <span className="block text-xs font-semibold text-muted-foreground uppercase">
+                    {format(dateObj, 'MMM')}
                   </span>
-                  <span className="flex items-center gap-1">
-                    {apt.mode === 'Online' ? (
-                      <Video className="w-4 h-4" />
-                    ) : (
-                      <MapPin className="w-4 h-4" />
-                    )}
-                    {apt.mode}
-                  </span>
+                  <span className="block text-2xl font-bold">{format(dateObj, 'dd')}</span>
+                </div>
+                <div>
+                  <h4 className="font-bold text-lg">{apt.title}</h4>
+                  <p className="text-muted-foreground text-sm">{apt.notes || 'Sem observações'}</p>
+                  <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-muted-foreground font-medium">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" /> {format(dateObj, 'HH:mm')}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-3 md:w-auto w-full">
-              <Badge
-                variant={apt.status === 'Confirmado' ? 'default' : 'outline'}
-                className="w-full sm:w-auto justify-center"
-              >
-                {apt.status}
-              </Badge>
-              {apt.mode === 'Online' && apt.status === 'Confirmado' && (
-                <Button className="w-full sm:w-auto">Acessar Sala</Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-      <Button
-        variant="outline"
-        className="w-full border-dashed py-8 h-auto text-muted-foreground hover:text-foreground"
-      >
-        + Agendar Nova Consulta
-      </Button>
+              <div className="flex flex-col sm:flex-row items-center gap-3 md:w-auto w-full">
+                <Badge
+                  variant={
+                    isConfirmed ? 'default' : apt.status === 'Cancelado' ? 'destructive' : 'outline'
+                  }
+                  className="w-full sm:w-auto justify-center"
+                >
+                  {apt.status}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

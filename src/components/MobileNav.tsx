@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Activity,
   Image as ImageIcon,
+  CreditCard,
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import { cn } from '@/lib/utils'
@@ -18,6 +19,7 @@ const navItems = [
   { title: 'Dieta', url: '/alimentacao', icon: Utensils },
   { title: 'Conteúdo', url: '/biblioteca', icon: BookOpen },
   { title: 'Perfil', url: '/consultas', icon: CalendarDays },
+  { title: 'Planos', url: '/planos', icon: CreditCard },
 ]
 
 export function MobileNav() {

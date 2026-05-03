@@ -1,13 +1,47 @@
+import { useState } from 'react'
 import { AppointmentList } from '@/components/appointments/AppointmentList'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
-import { CreditCard } from 'lucide-react'
+import { CreditCard, Plus } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import { createAppointment } from '@/services/appointments'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function Appointments() {
   const { toast } = useToast()
+  const { user } = useAuth()
+  const [open, setOpen] = useState(false)
+  const [formData, setFormData] = useState({ title: '', date: '', time: '', notes: '' })
+
+  const handleBook = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!user) return
+    try {
+      const dateTime = new Date(`${formData.date}T${formData.time}:00`).toISOString()
+      await createAppointment({
+        user: user.id,
+        title: formData.title,
+        date: dateTime,
+        notes: formData.notes,
+        status: 'Pendente',
+      })
+      toast({ title: 'Agendamento solicitado!' })
+      setOpen(false)
+      setFormData({ title: '', date: '', time: '', notes: '' })
+      window.dispatchEvent(new Event('appointments-updated'))
+    } catch (err) {
+      toast({ title: 'Erro ao agendar', variant: 'destructive' })
+    }
+  }
 
   const handleSave = () => {
     toast({
@@ -21,10 +55,68 @@ export default function Appointments() {
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <div className="lg:col-span-7 space-y-6">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight mb-1">Minhas Consultas</h2>
-          <p className="text-muted-foreground mb-6">
-            Gerencie seus encontros com a equipe multidisciplinar.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight mb-1">Minhas Consultas</h2>
+              <p className="text-muted-foreground">
+                Gerencie seus encontros com a equipe multidisciplinar.
+              </p>
+            </div>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" /> Novo Agendamento
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Agendar Consulta</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleBook} className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>Especialidade / Título</Label>
+                    <Input
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Ex: Nutricionista"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Data</Label>
+                      <Input
+                        required
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Horário</Label>
+                      <Input
+                        required
+                        type="time"
+                        value={formData.time}
+                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Observações</Label>
+                    <Input
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Motivo da consulta..."
+                    />
+                  </div>
+                  <Button type="submit" className="w-full">
+                    Confirmar Agendamento
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
           <AppointmentList />
         </div>
 

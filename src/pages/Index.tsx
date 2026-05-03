@@ -4,6 +4,7 @@ import { StatCards } from '@/components/dashboard/StatCards'
 import { WaterTracker } from '@/components/dashboard/WaterTracker'
 import { ActivityChart } from '@/components/dashboard/ActivityChart'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { SummaryCards } from '@/components/dashboard/SummaryCards'
 import { Progress } from '@/components/ui/progress'
 import { MOCK_USER } from '@/lib/mock-data'
 import { useAuth } from '@/hooks/use-auth'
@@ -317,6 +318,8 @@ export default function Dashboard() {
           <ActivityChart data={chartData} />
         </div>
       </div>
+
+      <SummaryCards />
 
       <StatCards />
 

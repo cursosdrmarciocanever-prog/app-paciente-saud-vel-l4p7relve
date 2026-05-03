@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Activity,
   Image as ImageIcon,
+  CreditCard,
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import {
@@ -29,6 +30,7 @@ const navItems = [
   { title: 'Alimentação', url: '/alimentacao', icon: Utensils },
   { title: 'Biblioteca', url: '/biblioteca', icon: BookOpen },
   { title: 'Consultas e Perfil', url: '/consultas', icon: CalendarDays },
+  { title: 'Planos', url: '/planos', icon: CreditCard },
 ]
 
 export function AppSidebar() {

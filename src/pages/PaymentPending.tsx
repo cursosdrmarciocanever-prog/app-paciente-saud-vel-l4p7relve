@@ -1,111 +1,118 @@
-import { useState } from 'react'
-import { useAuth } from '@/hooks/use-auth'
-import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
   CardFooter,
 } from '@/components/ui/card'
-import { toast } from 'sonner'
+import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/use-auth'
 import pb from '@/lib/pocketbase/client'
-import logoImg from '@/assets/logo-branco-dourado-2-229cd.png'
-import { CreditCard, LogOut, Check, Star } from 'lucide-react'
+import { toast } from 'sonner'
+import { Check } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 export default function PaymentPending() {
-  const { user, signOut } = useAuth()
-  const [loading, setLoading] = useState(false)
+  const { user } = useAuth()
+  const navigate = useNavigate()
 
-  const handleSimulatePayment = async () => {
+  const handleSubscribe = async () => {
     if (!user) return
-    setLoading(true)
     try {
-      const updatedUser = await pb.collection('users').update(user.id, { is_paid: true })
-      pb.authStore.save(pb.authStore.token, updatedUser)
-      toast.success('Assinatura confirmada! Bem-vindo(a) ao premium.')
-      window.location.href = '/'
-    } catch (error) {
-      toast.error('Erro ao processar assinatura.')
-    } finally {
-      setLoading(false)
+      await pb.collection('users').update(user.id, { is_paid: true })
+      toast.success('Assinatura Premium ativada com sucesso!')
+      navigate('/')
+    } catch (e) {
+      toast.error('Erro ao ativar assinatura.')
     }
   }
 
-  const benefits = [
-    'Acompanhamento médico personalizado',
-    'Upload ilimitado de relatórios de bioimpedância',
-    'Galeria de fotos de evolução',
-    'Dashboard unificado de saúde e metas',
-    'Acesso à biblioteca de conteúdos exclusivos',
-  ]
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 md:p-8">
-      <div className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-        <div className="space-y-6">
-          <div className="w-48 h-auto bg-primary/5 p-4 rounded-xl flex items-center justify-center border border-primary/10">
-            <img src={logoImg} alt="Clínica Canever" className="w-full object-contain" />
-          </div>
+    <div className="max-w-5xl mx-auto p-6 space-y-8 animate-fade-in pb-20">
+      <div className="text-center space-y-2 mt-8">
+        <h1 className="text-3xl font-bold tracking-tight">Escolha seu Plano</h1>
+        <p className="text-muted-foreground text-lg">
+          Desbloqueie todo o potencial do seu acompanhamento.
+        </p>
+      </div>
 
-          <div>
-            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
-              Desbloqueie seu <span className="text-primary">Potencial Máximo</span>
-            </h1>
-            <p className="text-lg text-slate-600">
-              Olá, {user?.name || 'paciente'}! Assine o plano Premium da Clínica Canever e tenha
-              acesso a todas as ferramentas para acompanhar sua evolução.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {benefits.map((benefit, i) => (
-              <div key={i} className="flex items-center gap-3 text-slate-700">
-                <div className="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                  <Check className="w-4 h-4 text-emerald-600" />
-                </div>
-                <span className="font-medium">{benefit}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <Card className="border-border/50 shadow-2xl relative overflow-hidden bg-white">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <CardHeader className="space-y-2 text-center pb-8 pt-8">
-            <div className="mx-auto w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mb-2">
-              <Star className="w-6 h-6 text-amber-600" />
-            </div>
-            <CardTitle className="text-2xl font-bold">Plano Premium</CardTitle>
-            <CardDescription className="text-base">Acesso completo à plataforma</CardDescription>
-            <div className="mt-4 flex items-baseline justify-center gap-1">
-              <span className="text-4xl font-extrabold text-slate-900">R$ 99</span>
-              <span className="text-slate-500 font-medium">/mês</span>
-            </div>
+      <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto mt-8">
+        <Card className="flex flex-col border-border/50 bg-background shadow-sm hover:shadow-md transition-shadow">
+          <CardHeader>
+            <CardTitle className="text-2xl">Plano Free</CardTitle>
+            <CardDescription>O essencial para começar.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <Button
-              onClick={handleSimulatePayment}
-              className="w-full h-14 text-lg font-bold shadow-lg hover:shadow-xl transition-all"
-              disabled={loading}
-            >
-              <CreditCard className="w-5 h-5 mr-2" />
-              {loading ? 'Processando...' : 'Assinar Agora'}
-            </Button>
-            <p className="text-xs text-center text-slate-500">
-              Pagamento seguro simulado para demonstração. Cancelamento a qualquer momento.
-            </p>
+          <CardContent className="flex-1 space-y-4">
+            <div className="text-3xl font-bold mb-6">Grátis</div>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-2 text-sm">
+                <Check className="w-5 h-5 text-green-500" /> Acesso ao Dashboard
+              </li>
+              <li className="flex items-center gap-2 text-sm">
+                <Check className="w-5 h-5 text-green-500" /> Agendamento de Consultas
+              </li>
+              <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Check className="w-5 h-5 text-muted-foreground/30" /> Acesso à Biblioteca de Vídeos
+              </li>
+              <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Check className="w-5 h-5 text-muted-foreground/30" /> Upload de Bioimpedância
+              </li>
+              <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Check className="w-5 h-5 text-muted-foreground/30" /> Galeria de Fotos de Evolução
+              </li>
+            </ul>
           </CardContent>
-          <CardFooter className="justify-center pb-6 border-t pt-6 bg-slate-50">
-            <Button
-              variant="ghost"
-              onClick={signOut}
-              className="text-muted-foreground hover:text-slate-900"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair da conta
+          <CardFooter>
+            <Button variant="outline" className="w-full" disabled={!user?.is_paid}>
+              {user?.is_paid ? 'Reverter para Free' : 'Plano Atual'}
             </Button>
+          </CardFooter>
+        </Card>
+
+        <Card className="flex flex-col border-primary shadow-lg relative overflow-hidden transform md:-translate-y-4">
+          <div className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-bl-lg tracking-wider">
+            RECOMENDADO
+          </div>
+          <CardHeader className="bg-primary/5 pb-8">
+            <CardTitle className="text-2xl text-primary">Plano Premium</CardTitle>
+            <CardDescription>Acompanhamento completo e ilimitado.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 space-y-4 pt-6">
+            <div className="text-4xl font-bold mb-6">
+              R$ 149,90<span className="text-sm font-normal text-muted-foreground">/mês</span>
+            </div>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-2 text-sm font-medium">
+                <Check className="w-5 h-5 text-primary" /> Acesso ao Dashboard
+              </li>
+              <li className="flex items-center gap-2 text-sm font-medium">
+                <Check className="w-5 h-5 text-primary" /> Agendamento de Consultas prioritário
+              </li>
+              <li className="flex items-center gap-2 text-sm font-medium">
+                <Check className="w-5 h-5 text-primary" /> Acesso total à Biblioteca de Vídeos
+              </li>
+              <li className="flex items-center gap-2 text-sm font-bold text-primary">
+                <Check className="w-5 h-5 text-primary" /> Upload Ilimitado de Bioimpedância
+              </li>
+              <li className="flex items-center gap-2 text-sm font-bold text-primary">
+                <Check className="w-5 h-5 text-primary" /> Galeria de Fotos de Evolução
+              </li>
+            </ul>
+          </CardContent>
+          <CardFooter className="pb-6">
+            {user?.is_paid ? (
+              <Button className="w-full text-lg h-12" disabled>
+                Premium Ativo
+              </Button>
+            ) : (
+              <Button
+                className="w-full text-lg h-12 shadow-md hover:shadow-lg transition-shadow"
+                onClick={handleSubscribe}
+              >
+                Assinar Agora
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </div>
