@@ -7,46 +7,41 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import logoImg from '@/assets/logo-branco-dourado-2-229cd.png'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
+
+const loginSchema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(8, 'A senha deve ter no mínimo 8 caracteres'),
+})
 
 export default function Login() {
   const { signIn } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
 
-  const validate = () => {
-    const newErrors: { email?: string; password?: string } = {}
-    let isValid = true
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  })
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Email inválido'
-      isValid = false
-    }
-
-    if (password.length < 8) {
-      newErrors.password = 'A senha deve ter no mínimo 8 caracteres'
-      isValid = false
-    }
-
-    setErrors(newErrors)
-    return isValid
-  }
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validate()) return
-
+  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     setLoading(true)
-    const { error } = await signIn(email, password)
-    if (error) {
-      toast.error('Erro ao fazer login. Verifique suas credenciais.')
-    } else {
-      toast.success('Bem-vindo!')
-      navigate('/')
+    try {
+      const { error } = await signIn(values.email, values.password)
+      if (error) {
+        toast.error('Erro ao fazer login. Verifique suas credenciais.')
+      } else {
+        toast.success('Bem-vindo!')
+        navigate('/')
+      }
+    } catch (err) {
+      toast.error('Erro inesperado ao fazer login.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -75,38 +70,45 @@ export default function Login() {
             </div>
           ) : (
             <>
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-1">
-                  <Input
-                    type="email"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className={`h-11 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-blue-500 ${errors.email ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="Email" {...field} className="h-11 bg-white" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {errors.email && <p className="text-sm text-red-500 px-1">{errors.email}</p>}
-                </div>
-                <div className="space-y-1">
-                  <Input
-                    type="password"
-                    placeholder="Senha"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className={`h-11 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-blue-500 ${errors.password ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Senha"
+                            {...field}
+                            className="h-11 bg-white"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {errors.password && (
-                    <p className="text-sm text-red-500 px-1">{errors.password}</p>
-                  )}
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full h-11 text-base bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200 shadow-sm"
-                >
-                  Entrar
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    className="w-full h-11 text-base bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200 shadow-sm"
+                  >
+                    Entrar
+                  </Button>
+                </form>
+              </Form>
               <div className="mt-6 text-center text-sm text-gray-600">
                 Não tem uma conta?{' '}
                 <Link

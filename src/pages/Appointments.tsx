@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
+import { toast } from 'sonner'
 import { CreditCard, Plus } from 'lucide-react'
 import {
   Dialog,
@@ -15,40 +15,67 @@ import {
 } from '@/components/ui/dialog'
 import { createAppointment } from '@/services/appointments'
 import { useAuth } from '@/hooks/use-auth'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+
+const appointmentSchema = z.object({
+  title: z.string().min(1, 'Título é obrigatório'),
+  date: z.string().min(1, 'Data é obrigatória'),
+  time: z.string().min(1, 'Horário é obrigatório'),
+  type: z.enum(['presencial', 'telemedicina'], { required_error: 'Tipo é obrigatório' }),
+  notes: z.string().optional(),
+})
+
+type AppointmentFormValues = z.infer<typeof appointmentSchema>
 
 export default function Appointments() {
-  const { toast } = useToast()
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
-  const [formData, setFormData] = useState({ title: '', date: '', time: '', notes: '' })
 
-  const handleBook = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const form = useForm<AppointmentFormValues>({
+    resolver: zodResolver(appointmentSchema),
+    defaultValues: { title: '', date: '', time: '', type: 'presencial', notes: '' },
+  })
+
+  const onSubmit = async (values: AppointmentFormValues) => {
     if (!user) return
     try {
-      const dateTime = new Date(`${formData.date}T${formData.time}:00`).toISOString()
+      const dateTime = new Date(`${values.date}T${values.time}:00`).toISOString()
       await createAppointment({
         user: user.id,
-        title: formData.title,
+        title: values.title,
         date: dateTime,
-        notes: formData.notes,
-        status: 'Pendente',
+        type: values.type,
+        status: 'agendado',
+        notes: values.notes,
       })
-      toast({ title: 'Agendamento solicitado!' })
+      toast.success('Agendamento solicitado!')
       setOpen(false)
-      setFormData({ title: '', date: '', time: '', notes: '' })
+      form.reset()
       window.dispatchEvent(new Event('appointments-updated'))
     } catch (err) {
-      toast({ title: 'Erro ao agendar', variant: 'destructive' })
+      toast.error('Erro ao agendar consulta.')
     }
   }
 
   const handleSave = () => {
-    toast({
-      title: 'Sucesso',
-      description: 'Seu perfil foi atualizado com sucesso.',
-      duration: 3000,
-    })
+    toast.success('Seu perfil foi atualizado com sucesso.')
   }
 
   return (
@@ -72,48 +99,90 @@ export default function Appointments() {
                 <DialogHeader>
                   <DialogTitle>Agendar Consulta</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleBook} className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>Especialidade / Título</Label>
-                    <Input
-                      required
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      placeholder="Ex: Nutricionista"
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Especialidade / Título</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Nutricionista" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Data</Label>
-                      <Input
-                        required
-                        type="date"
-                        value={formData.date}
-                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+
+                    <FormField
+                      control={form.control}
+                      name="type"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tipo de Consulta</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione o tipo" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="presencial">Presencial</SelectItem>
+                              <SelectItem value="telemedicina">Telemedicina</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="date"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Data</FormLabel>
+                            <FormControl>
+                              <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="time"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Horário</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Horário</Label>
-                      <Input
-                        required
-                        type="time"
-                        value={formData.time}
-                        onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Observações</Label>
-                    <Input
-                      value={formData.notes}
-                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                      placeholder="Motivo da consulta..."
+                    <FormField
+                      control={form.control}
+                      name="notes"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Observações</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Motivo da consulta..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                  </div>
-                  <Button type="submit" className="w-full">
-                    Confirmar Agendamento
-                  </Button>
-                </form>
+                    <Button type="submit" className="w-full">
+                      Confirmar Agendamento
+                    </Button>
+                  </form>
+                </Form>
               </DialogContent>
             </Dialog>
           </div>

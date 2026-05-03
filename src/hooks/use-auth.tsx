@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         weekly_goal: data.weekly_goal || 3,
         daily_goal_minutes: data.daily_goal_minutes || 30,
         is_paid: false,
+        role: 'paciente',
       })
       return { error: null }
     } catch (error) {

@@ -14,6 +14,14 @@ import {
 import { formatDistanceToNow, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { useRealtime } from '@/hooks/use-realtime'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useAuth } from '@/hooks/use-auth'
+import { useNavigate } from 'react-router-dom'
 
 const routeNames: Record<string, string> = {
   '/': 'Dashboard',
@@ -25,6 +33,8 @@ const routeNames: Record<string, string> = {
 
 export function Header() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { signOut } = useAuth()
   const title = routeNames[location.pathname] || 'App Paciente Saudável'
   const [notifications, setNotifications] = useState<NotificationRecord[]>([])
 
@@ -109,10 +119,30 @@ export function Header() {
             </div>
           </PopoverContent>
         </Popover>
-        <Avatar className="w-9 h-9 cursor-pointer ring-2 ring-background shadow-sm">
-          <AvatarImage src="https://img.usecurling.com/ppl/thumbnail?gender=female&seed=1" />
-          <AvatarFallback className="bg-primary/10 text-primary">MS</AvatarFallback>
-        </Avatar>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Avatar className="w-9 h-9 cursor-pointer ring-2 ring-background shadow-sm transition-transform hover:scale-105">
+              <AvatarImage src="https://img.usecurling.com/ppl/thumbnail?gender=female&seed=1" />
+              <AvatarFallback className="bg-primary/10 text-primary">MS</AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem asChild>
+              <Link to="/configuracoes" className="w-full cursor-pointer">
+                Configurações
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="text-red-600 cursor-pointer focus:text-red-600 focus:bg-red-50"
+              onClick={() => {
+                signOut()
+                navigate('/login')
+              }}
+            >
+              Sair
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )

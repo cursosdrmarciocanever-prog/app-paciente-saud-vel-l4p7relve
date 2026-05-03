@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { getActiveSubscription, SubscriptionRecord } from '@/services/subscriptions'
+import { CreditCard } from 'lucide-react'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -26,6 +28,7 @@ export default function Dashboard() {
   const [badges, setBadges] = useState<any[]>([])
   const [userBadges, setUserBadges] = useState<any[]>([])
   const [stats, setStats] = useState({ streak: 0, total: 0 })
+  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null)
 
   const progressPercent = Math.round(
     ((MOCK_USER.startWeight - MOCK_USER.currentWeight) /
@@ -114,6 +117,7 @@ export default function Dashboard() {
     if (user?.id) {
       loadActivities()
       loadBadges()
+      getActiveSubscription(user.id).then(setSubscription).catch(console.error)
     }
   }, [user?.id])
 
@@ -193,6 +197,34 @@ export default function Dashboard() {
             </div>
             <Progress value={progressPercent} className="h-2.5 bg-black/10 [&>div]:bg-white" />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/50 shadow-sm">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <CreditCard className="w-5 h-5 text-primary" />
+            Minha Assinatura
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {subscription ? (
+            <div className="flex justify-between items-center p-4 border rounded-lg bg-primary/5">
+              <div>
+                <p className="font-semibold text-foreground uppercase">Plano {subscription.plan}</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Status: <span className="text-primary font-medium">{subscription.status}</span>
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-bold text-lg">R$ {subscription.monthly_price}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="p-4 border rounded-lg bg-muted/30 text-center">
+              <p className="text-muted-foreground font-medium">Nenhuma assinatura ativa</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 

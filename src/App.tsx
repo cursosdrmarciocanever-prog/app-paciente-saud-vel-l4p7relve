@@ -16,6 +16,8 @@ import Photos from './pages/Photos'
 import Register from './pages/Register'
 import PaymentPending from './pages/PaymentPending'
 import Settings from './pages/Settings'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { Navigate } from 'react-router-dom'
 
 const AppRoutes = () => {
   const { user, loading } = useAuth()
@@ -26,7 +28,8 @@ const AppRoutes = () => {
     return (
       <Routes>
         <Route path="/register" element={<Register />} />
-        <Route path="*" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     )
   }
@@ -50,15 +53,17 @@ const AppRoutes = () => {
 }
 
 const App = () => (
-  <AuthProvider>
-    <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AppRoutes />
-      </TooltipProvider>
-    </BrowserRouter>
-  </AuthProvider>
+  <ErrorBoundary>
+    <AuthProvider>
+      <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppRoutes />
+        </TooltipProvider>
+      </BrowserRouter>
+    </AuthProvider>
+  </ErrorBoundary>
 )
 
 export default App

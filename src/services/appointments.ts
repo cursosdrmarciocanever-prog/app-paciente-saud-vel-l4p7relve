@@ -2,10 +2,13 @@ import pb from '@/lib/pocketbase/client'
 
 export interface AppointmentRecord {
   id: string
+  user: string
   title: string
   date: string
-  status: string
-  notes: string
+  type: 'presencial' | 'telemedicina'
+  status: 'agendado' | 'concluido' | 'cancelado'
+  notes?: string
+  subscription?: string
 }
 
 export const getAppointments = () =>

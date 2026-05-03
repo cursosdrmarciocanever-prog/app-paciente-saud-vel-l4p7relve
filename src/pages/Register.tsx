@@ -7,68 +7,48 @@ import { toast } from 'sonner'
 import { Link, useNavigate } from 'react-router-dom'
 import { Skeleton } from '@/components/ui/skeleton'
 import logoImg from '@/assets/logo-branco-dourado-2-229cd.png'
+import { z } from 'zod'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
+
+const registerSchema = z
+  .object({
+    name: z.string().min(1, 'Nome é obrigatório'),
+    email: z.string().email('Email inválido'),
+    password: z.string().min(8, 'A senha deve ter no mínimo 8 caracteres'),
+    passwordConfirm: z.string(),
+  })
+  .refine((data) => data.password === data.passwordConfirm, {
+    message: 'As senhas não conferem',
+    path: ['passwordConfirm'],
+  })
 
 export default function Register() {
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    passwordConfirm: '',
+
+  const form = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { name: '', email: '', password: '', passwordConfirm: '' },
   })
-  const [errors, setErrors] = useState<Record<string, string>>({})
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: '' }))
-    }
-  }
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {}
-    let isValid = true
-
-    if (!formData.name.trim()) {
-      newErrors.name = 'Nome é obrigatório'
-      isValid = false
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Email inválido'
-      isValid = false
-    }
-
-    if (formData.password.length < 8) {
-      newErrors.password = 'A senha deve ter no mínimo 8 caracteres'
-      isValid = false
-    }
-
-    if (formData.password !== formData.passwordConfirm) {
-      newErrors.passwordConfirm = 'As senhas não conferem'
-      isValid = false
-    }
-
-    setErrors(newErrors)
-    return isValid
-  }
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validate()) return
-
+  const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     setLoading(true)
-    const { error } = await signUp(formData)
-    if (error) {
-      toast.error('Erro ao criar conta. Verifique os dados fornecidos.')
-    } else {
-      toast.success('Conta criada com sucesso! Faça login para continuar.')
-      navigate('/login')
+    try {
+      const { error } = await signUp(values)
+      if (error) {
+        toast.error('Erro ao criar conta. Verifique os dados fornecidos.')
+      } else {
+        toast.success('Conta criada com sucesso! Faça login para continuar.')
+        navigate('/login')
+      }
+    } catch (err) {
+      toast.error('Erro inesperado ao criar conta.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   return (
@@ -92,73 +72,86 @@ export default function Register() {
               <Skeleton className="h-11 w-full" />
               <Skeleton className="h-11 w-full" />
               <Skeleton className="h-11 w-full" />
-              <Skeleton className="h-11 w-full mt-4" />
               <div className="flex justify-center mt-6">
                 <Skeleton className="h-4 w-40" />
               </div>
             </div>
           ) : (
             <>
-              <form onSubmit={handleRegister} className="space-y-4">
-                <div className="space-y-1">
-                  <Input
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <FormField
+                    control={form.control}
                     name="name"
-                    placeholder="Nome completo"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className={`h-11 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-blue-500 ${errors.name ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="Nome completo" {...field} className="h-11 bg-white" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {errors.name && <p className="text-sm text-red-500 px-1">{errors.name}</p>}
-                </div>
-                <div className="space-y-1">
-                  <Input
+                  <FormField
+                    control={form.control}
                     name="email"
-                    type="email"
-                    placeholder="Email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className={`h-11 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-blue-500 ${errors.email ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="Email"
+                            {...field}
+                            className="h-11 bg-white"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {errors.email && <p className="text-sm text-red-500 px-1">{errors.email}</p>}
-                </div>
-                <div className="space-y-1">
-                  <Input
+                  <FormField
+                    control={form.control}
                     name="password"
-                    type="password"
-                    placeholder="Senha"
-                    value={formData.password}
-                    onChange={handleChange}
-                    required
-                    className={`h-11 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-blue-500 ${errors.password ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Senha"
+                            {...field}
+                            className="h-11 bg-white"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {errors.password && (
-                    <p className="text-sm text-red-500 px-1">{errors.password}</p>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <Input
+                  <FormField
+                    control={form.control}
                     name="passwordConfirm"
-                    type="password"
-                    placeholder="Confirmar senha"
-                    value={formData.passwordConfirm}
-                    onChange={handleChange}
-                    required
-                    className={`h-11 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 focus-visible:ring-blue-500 ${errors.passwordConfirm ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="Confirmar senha"
+                            {...field}
+                            className="h-11 bg-white"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                  {errors.passwordConfirm && (
-                    <p className="text-sm text-red-500 px-1">{errors.passwordConfirm}</p>
-                  )}
-                </div>
 
-                <Button
-                  type="submit"
-                  className="w-full h-11 text-base bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200 shadow-sm mt-2"
-                >
-                  Criar conta
-                </Button>
-              </form>
+                  <Button
+                    type="submit"
+                    className="w-full h-11 text-base bg-blue-500 hover:bg-blue-600 text-white transition-colors duration-200 shadow-sm mt-2"
+                  >
+                    Criar conta
+                  </Button>
+                </form>
+              </Form>
               <div className="mt-6 text-center text-sm text-gray-600">
                 Já tem uma conta?{' '}
                 <Link

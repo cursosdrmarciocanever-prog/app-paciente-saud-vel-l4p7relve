@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-05-03T22:07:00.797Z",
+  "generatedAt": "2026-05-03T22:11:13.655Z",
   "collections": [
     {
       "name": "users",
       "type": "auth",
       "apiRules": {
-        "list": "id = @request.auth.id",
-        "view": "id = @request.auth.id",
+        "list": "id = @request.auth.id || @request.auth.role = 'admin' || @request.auth.role = 'financeiro'",
+        "view": "id = @request.auth.id || @request.auth.role = 'admin' || @request.auth.role = 'financeiro'",
         "create": "",
-        "update": "id = @request.auth.id",
-        "delete": "id = @request.auth.id"
+        "update": "id = @request.auth.id || @request.auth.role = 'admin'",
+        "delete": "id = @request.auth.id || @request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -55,6 +55,13 @@
           "type": "bool",
           "required": false,
           "system": false
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["admin", "financeiro", "paciente"]
         }
       ],
       "indexes": [
@@ -333,11 +340,11 @@
       "name": "appointments",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && user = @request.auth.id",
-        "view": "@request.auth.id != '' && user = @request.auth.id",
-        "create": "@request.auth.id != '' && user = @request.auth.id",
-        "update": "@request.auth.id != '' && user = @request.auth.id",
-        "delete": "@request.auth.id != '' && user = @request.auth.id"
+        "list": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
+        "view": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
+        "create": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
+        "update": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
+        "delete": "@request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -364,7 +371,7 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["Pendente", "Confirmado", "Cancelado"]
+          "selectValues": ["agendado", "concluido", "cancelado"]
         },
         {
           "name": "notes",
@@ -385,6 +392,20 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "subscription",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "subscriptions"
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["presencial", "telemedicina"]
         }
       ],
       "indexes": []
@@ -480,6 +501,73 @@
         {
           "name": "is_read",
           "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "subscriptions",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.role = 'admin' || @request.auth.role = 'financeiro' || (@request.auth.id != '' && user = @request.auth.id)",
+        "view": "@request.auth.role = 'admin' || @request.auth.role = 'financeiro' || (@request.auth.id != '' && user = @request.auth.id)",
+        "create": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
+        "update": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
+        "delete": "@request.auth.role = 'admin'"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "plan",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["entry", "intermediate", "premium", "diamond"]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["active", "pending_payment", "canceled", "suspended"]
+        },
+        {
+          "name": "start_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "renewal_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "monthly_price",
+          "type": "number",
           "required": false,
           "system": false
         },
