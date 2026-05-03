@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -18,7 +18,13 @@ import PaymentPending from './pages/PaymentPending'
 import Settings from './pages/Settings'
 import Checkout from './pages/Checkout'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { Navigate } from 'react-router-dom'
+import { AdminLayout } from './components/AdminLayout'
+import { AdminDashboard } from './pages/admin/AdminDashboard'
+import { AdminUsers } from './pages/admin/AdminUsers'
+import { AdminSubscriptions } from './pages/admin/AdminSubscriptions'
+import { AdminAppointments } from './pages/admin/AdminAppointments'
+import { AdminPayments } from './pages/admin/AdminPayments'
+import { AdminNotifications } from './pages/admin/AdminNotifications'
 
 const AppRoutes = () => {
   const { user, loading } = useAuth()
@@ -37,6 +43,19 @@ const AppRoutes = () => {
 
   return (
     <Routes>
+      <Route
+        path="/admin"
+        element={user.role === 'admin' ? <AdminLayout /> : <Navigate to="/" replace />}
+      >
+        <Route index element={<AdminDashboard />} />
+        <Route path="usuarios" element={<AdminUsers />} />
+        <Route path="assinaturas" element={<AdminSubscriptions />} />
+        <Route path="consultas" element={<AdminAppointments />} />
+        <Route path="pagamentos" element={<AdminPayments />} />
+        <Route path="notificacoes" element={<AdminNotifications />} />
+        <Route path="*" element={<NotFound />} />
+      </Route>
+
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
@@ -50,6 +69,7 @@ const AppRoutes = () => {
         <Route path="/planos" element={<PaymentPending />} />
         <Route path="/checkout/:planId" element={<Checkout />} />
       </Route>
+
       <Route path="*" element={<NotFound />} />
     </Routes>
   )
