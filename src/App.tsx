@@ -57,7 +57,10 @@ const AppRoutes = () => {
       </Route>
 
       <Route element={<Layout />}>
-        <Route path="/" element={<Dashboard />} />
+        <Route
+          path="/"
+          element={user.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />}
+        />
         <Route path="/dashboard" element={<Navigate to="/" replace />} />
         <Route path="/evolucao" element={<Evolution />} />
         <Route path="/alimentacao" element={<Nutrition />} />
