@@ -46,6 +46,7 @@ export default function Dashboard() {
       setUserBadges(earned)
     } catch (e) {
       console.error(e)
+      toast.error('Erro ao carregar dados das conquistas')
     }
   }
 
@@ -110,6 +111,7 @@ export default function Dashboard() {
       })
     } catch (e) {
       console.error(e)
+      toast.error('Erro ao carregar dados das atividades')
     }
   }
 
@@ -117,7 +119,11 @@ export default function Dashboard() {
     if (user?.id) {
       loadActivities()
       loadBadges()
-      getActiveSubscription(user.id).then(setSubscription).catch(console.error)
+      getActiveSubscription(user.id)
+        .then(setSubscription)
+        .catch(() => {
+          toast.error('Erro ao carregar dados da assinatura')
+        })
     }
   }, [user?.id])
 
@@ -211,9 +217,25 @@ export default function Dashboard() {
           {subscription ? (
             <div className="flex justify-between items-center p-4 border rounded-lg bg-primary/5">
               <div>
-                <p className="font-semibold text-foreground uppercase">Plano {subscription.plan}</p>
+                <p className="font-semibold text-foreground uppercase">
+                  Plano:{' '}
+                  {{
+                    entry: 'Entry',
+                    intermediate: 'Intermediário',
+                    premium: 'Premium',
+                    diamond: 'Diamond',
+                  }[subscription.plan] || subscription.plan}
+                </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Status: <span className="text-primary font-medium">{subscription.status}</span>
+                  Status:{' '}
+                  <span className="text-primary font-medium">
+                    {{
+                      active: 'Ativo',
+                      pending_payment: 'Pagamento Pendente',
+                      canceled: 'Cancelado',
+                      suspended: 'Suspenso',
+                    }[subscription.status] || subscription.status}
+                  </span>
                 </p>
               </div>
               <div className="text-right">

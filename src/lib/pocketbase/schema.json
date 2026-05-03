@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T22:11:13.655Z",
+  "generatedAt": "2026-05-03T22:17:53.591Z",
   "collections": [
     {
       "name": "users",
@@ -340,10 +340,10 @@
       "name": "appointments",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
-        "view": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
-        "create": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
-        "update": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
+        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
+        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
         "delete": "@request.auth.role = 'admin'"
       },
       "fields": [
@@ -525,10 +525,10 @@
       "name": "subscriptions",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.role = 'admin' || @request.auth.role = 'financeiro' || (@request.auth.id != '' && user = @request.auth.id)",
-        "view": "@request.auth.role = 'admin' || @request.auth.role = 'financeiro' || (@request.auth.id != '' && user = @request.auth.id)",
-        "create": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
-        "update": "@request.auth.role = 'admin' || (@request.auth.id != '' && user = @request.auth.id)",
+        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
+        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
         "delete": "@request.auth.role = 'admin'"
       },
       "fields": [

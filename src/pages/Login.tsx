@@ -32,10 +32,10 @@ export default function Login() {
     try {
       const { error } = await signIn(values.email, values.password)
       if (error) {
-        toast.error('Erro ao fazer login. Verifique suas credenciais.')
+        toast.error('Usuário ou senha incorretos.')
       } else {
         toast.success('Bem-vindo!')
-        navigate('/')
+        navigate('/dashboard')
       }
     } catch (err) {
       toast.error('Erro inesperado ao fazer login.')
