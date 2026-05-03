@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
 import { format } from 'date-fns'
 import { Image as ImageIcon, Plus, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -42,6 +43,7 @@ export default function Photos() {
   const [angle, setAngle] = useState<'Frente' | 'Lado' | 'Costas' | ''>('')
   const [file, setFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
   const loadData = async () => {
     try {
@@ -95,6 +97,7 @@ export default function Photos() {
     }
 
     setIsSubmitting(true)
+    setUploadProgress(0)
 
     const formData = new FormData()
     formData.append('user', user.id)
@@ -106,18 +109,28 @@ export default function Photos() {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 60000)
 
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => Math.min(prev + 10, 90))
+    }, 500)
+
     try {
       await createEvolutionPhoto(formData, {
         requestKey: null,
         fetch: (url: any, config: any) => fetch(url, { ...config, signal: controller.signal }),
       })
+      clearInterval(interval)
+      setUploadProgress(100)
       clearTimeout(timeoutId)
-      toast.success('Upload concluído com sucesso!')
-      setOpen(false)
-      setDate('')
-      setAngle('')
-      setFile(null)
+      setTimeout(() => {
+        toast.success('Upload concluído com sucesso!')
+        setOpen(false)
+        setDate('')
+        setAngle('')
+        setFile(null)
+        setUploadProgress(0)
+      }, 500)
     } catch (err: any) {
+      clearInterval(interval)
       clearTimeout(timeoutId)
       const fieldErrors = extractFieldErrors(err)
       setErrors(fieldErrors)
@@ -227,11 +240,22 @@ export default function Photos() {
                 />
                 {errors.photo && <p className="text-sm text-destructive">{errors.photo}</p>}
               </div>
+
+              {isSubmitting && (
+                <div className="space-y-1.5 py-2">
+                  <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                    <span>Enviando foto...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="h-2" />
+                </div>
+              )}
+
               <Button type="submit" className="w-full" disabled={isSubmitting || !!errors.photo}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Enviando foto...
+                    Processando...
                   </>
                 ) : (
                   'Salvar Foto'

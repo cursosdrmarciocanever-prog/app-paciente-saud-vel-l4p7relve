@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Progress } from '@/components/ui/progress'
 import { Activity, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
@@ -23,6 +24,7 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
   const [notes, setNotes] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const resetForm = () => {
@@ -30,6 +32,7 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
     setNotes('')
     setFile(null)
     setErrors({})
+    setUploadProgress(0)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,6 +64,7 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
     }
 
     setIsSubmitting(true)
+    setUploadProgress(0)
 
     const formData = new FormData()
     formData.append('user', user.id)
@@ -75,16 +79,25 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 60000)
 
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => Math.min(prev + 10, 90))
+    }, 500)
+
     try {
       await createBioimpedance(formData, {
         requestKey: null,
         fetch: (url: any, config: any) => fetch(url, { ...config, signal: controller.signal }),
       })
+      clearInterval(interval)
+      setUploadProgress(100)
       clearTimeout(timeoutId)
-      toast.success('Upload concluído com sucesso!')
-      setOpen(false)
-      resetForm()
+      setTimeout(() => {
+        toast.success('Upload concluído com sucesso!')
+        setOpen(false)
+        resetForm()
+      }, 500)
     } catch (err: any) {
+      clearInterval(interval)
       clearTimeout(timeoutId)
       const fieldErrors = extractFieldErrors(err)
       setErrors(fieldErrors)
@@ -178,11 +191,22 @@ export function LogBioimpedanceDialog({ trigger }: { trigger?: React.ReactNode }
             />
             {errors.notes && <p className="text-sm text-destructive">{errors.notes}</p>}
           </div>
+
+          {isSubmitting && (
+            <div className="space-y-1.5 py-2">
+              <div className="flex justify-between text-xs font-medium text-muted-foreground">
+                <span>Enviando arquivo...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <Progress value={uploadProgress} className="h-2" />
+            </div>
+          )}
+
           <Button type="submit" className="w-full" disabled={isSubmitting || !!errors.report}>
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Enviando arquivo...
+                Processando...
               </>
             ) : (
               'Salvar Avaliação'
