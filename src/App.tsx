@@ -16,6 +16,7 @@ import Photos from './pages/Photos'
 import Register from './pages/Register'
 import PaymentPending from './pages/PaymentPending'
 import Settings from './pages/Settings'
+import Checkout from './pages/Checkout'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Navigate } from 'react-router-dom'
 
@@ -47,6 +48,7 @@ const AppRoutes = () => {
         <Route path="/fotos" element={<Photos />} />
         <Route path="/configuracoes" element={<Settings />} />
         <Route path="/planos" element={<PaymentPending />} />
+        <Route path="/checkout/:planId" element={<Checkout />} />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

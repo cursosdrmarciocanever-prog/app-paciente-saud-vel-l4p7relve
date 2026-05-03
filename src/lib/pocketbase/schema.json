@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-03T22:18:44.594Z",
+  "generatedAt": "2026-05-03T22:24:58.696Z",
   "collections": [
     {
       "name": "users",
@@ -587,6 +587,90 @@
         }
       ],
       "indexes": []
+    },
+    {
+      "name": "payments",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
+        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "subscription",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "subscriptions"
+        },
+        {
+          "name": "amount",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pendente", "processando", "aprovado", "recusado", "reembolsado"]
+        },
+        {
+          "name": "method",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["cartao_credito", "pix", "boleto"]
+        },
+        {
+          "name": "gateway_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "payment_date",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "next_renewal",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_payments_user ON payments (user)",
+        "CREATE INDEX idx_payments_subscription ON payments (subscription)",
+        "CREATE INDEX idx_payments_status ON payments (status)"
+      ]
     }
   ]
 }
