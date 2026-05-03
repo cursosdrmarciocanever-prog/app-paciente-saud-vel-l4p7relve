@@ -1,81 +1,98 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { AppointmentList } from '@/components/appointments/AppointmentList'
+import { AppointmentForm } from '@/components/appointments/AppointmentForm'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { CreditCard, Plus } from 'lucide-react'
+import { CreditCard, Plus, Info } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog'
-import { createAppointment } from '@/services/appointments'
+import { getActiveSubscription, SubscriptionRecord } from '@/services/subscriptions'
+import { AppointmentRecord } from '@/services/appointments'
 import { useAuth } from '@/hooks/use-auth'
-import { z } from 'zod'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { format, startOfDay, addDays } from 'date-fns'
+import pb from '@/lib/pocketbase/client'
 
-const appointmentSchema = z.object({
-  title: z.string().min(1, 'Título é obrigatório'),
-  date: z.string().min(1, 'Data é obrigatória'),
-  time: z.string().min(1, 'Horário é obrigatório'),
-  type: z.enum(['presencial', 'telemedicina'], { required_error: 'Tipo é obrigatório' }),
-  notes: z.string().optional(),
-})
-
-type AppointmentFormValues = z.infer<typeof appointmentSchema>
+const planIntervals: Record<string, number> = {
+  entry: 90,
+  intermediate: 60,
+  premium: 30,
+  diamond: 7,
+}
+const planNames: Record<string, string> = {
+  entry: 'Entry',
+  intermediate: 'Intermediate',
+  premium: 'Premium',
+  diamond: 'Diamond',
+}
 
 export default function Appointments() {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
+  const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null)
+  const [mostRecentApt, setMostRecentApt] = useState<AppointmentRecord | null>(null)
+  const [loadingStatus, setLoadingStatus] = useState(true)
 
-  const form = useForm<AppointmentFormValues>({
-    resolver: zodResolver(appointmentSchema),
-    defaultValues: { title: '', date: '', time: '', type: 'presencial', notes: '' },
-  })
-
-  const onSubmit = async (values: AppointmentFormValues) => {
+  useEffect(() => {
     if (!user) return
-    try {
-      const dateTime = new Date(`${values.date}T${values.time}:00`).toISOString()
-      await createAppointment({
-        user: user.id,
-        title: values.title,
-        date: dateTime,
-        type: values.type,
-        status: 'agendado',
-        notes: values.notes,
-      })
-      toast.success('Agendamento solicitado!')
-      setOpen(false)
-      form.reset()
-      window.dispatchEvent(new Event('appointments-updated'))
-    } catch (err) {
-      toast.error('Erro ao agendar consulta.')
+    const fetchStatus = async () => {
+      try {
+        const sub = await getActiveSubscription(user.id)
+        setSubscription(sub)
+        try {
+          const apts = await pb.collection('appointments').getList<AppointmentRecord>(1, 1, {
+            filter: `user = "${user.id}" && status != "cancelado"`,
+            sort: '-date',
+            requestKey: null,
+          })
+          setMostRecentApt(apts.items[0] || null)
+        } catch {
+          setMostRecentApt(null)
+        }
+      } catch {
+        setSubscription(null)
+      } finally {
+        setLoadingStatus(false)
+      }
+    }
+    fetchStatus()
+    window.addEventListener('appointments-updated', fetchStatus)
+    return () => window.removeEventListener('appointments-updated', fetchStatus)
+  }, [user])
+
+  let isEligible = false
+  let nextAvailableDate: Date | null = null
+
+  if (subscription?.status === 'active') {
+    if (!mostRecentApt) isEligible = true
+    else {
+      const interval = planIntervals[subscription.plan] || 90
+      nextAvailableDate = addDays(startOfDay(new Date(mostRecentApt.date)), interval)
+      if (startOfDay(new Date()) >= nextAvailableDate) isEligible = true
     }
   }
 
-  const handleSave = () => {
-    toast.success('Seu perfil foi atualizado com sucesso.')
+  const handleOpenDialog = () => {
+    if (!subscription || subscription.status !== 'active') {
+      toast.error('Você precisa de uma assinatura ativa para agendar consultas.')
+      return
+    }
+    if (!isEligible && nextAvailableDate) {
+      toast.error(
+        `Você poderá agendar novamente a partir de ${format(nextAvailableDate, 'dd/MM/yyyy')}.`,
+      )
+      return
+    }
+    setOpen(true)
   }
 
   return (
@@ -90,164 +107,107 @@ export default function Appointments() {
               </p>
             </div>
             <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" /> Novo Agendamento
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
+              <Button
+                onClick={handleOpenDialog}
+                disabled={
+                  loadingStatus ||
+                  subscription?.status !== 'active' ||
+                  (!isEligible && nextAvailableDate !== null)
+                }
+              >
+                <Plus className="w-4 h-4 mr-2" /> Agendar Consulta
+              </Button>
+              <DialogContent className="sm:max-w-[450px]">
                 <DialogHeader>
                   <DialogTitle>Agendar Consulta</DialogTitle>
+                  <DialogDescription>
+                    Preencha os detalhes para agendar seu atendimento.
+                  </DialogDescription>
                 </DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Especialidade / Título</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Ex: Nutricionista" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Tipo de Consulta</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione o tipo" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="presencial">Presencial</SelectItem>
-                              <SelectItem value="telemedicina">Telemedicina</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="date"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Data</FormLabel>
-                            <FormControl>
-                              <Input type="date" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="time"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Horário</FormLabel>
-                            <FormControl>
-                              <Input type="time" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    <FormField
-                      control={form.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Observações</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Motivo da consulta..." {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <Button type="submit" className="w-full">
-                      Confirmar Agendamento
-                    </Button>
-                  </form>
-                </Form>
+                {user && subscription && (
+                  <AppointmentForm
+                    userId={user.id}
+                    subscriptionId={subscription.id}
+                    onSuccess={() => {
+                      setOpen(false)
+                      window.dispatchEvent(new Event('appointments-updated'))
+                    }}
+                  />
+                )}
               </DialogContent>
             </Dialog>
           </div>
-          <AppointmentList />
+          {!isEligible && nextAvailableDate && (
+            <Alert className="mb-6 bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-900">
+              <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertTitle>Agendamento Indisponível</AlertTitle>
+              <AlertDescription>
+                Pelo seu plano <strong>{planNames[subscription?.plan || '']}</strong>, você pode
+                agendar consultas a cada {planIntervals[subscription?.plan || '']} dias. Sua próxima
+                data disponível é <strong>{format(nextAvailableDate, 'dd/MM/yyyy')}</strong>.
+              </AlertDescription>
+            </Alert>
+          )}
+          <AppointmentList onScheduleClick={handleOpenDialog} />
         </div>
-
-        <Card className="border-border/50 shadow-sm mt-8">
+      </div>
+      <div className="lg:col-span-5 space-y-6">
+        <Card className="border-border/50 shadow-sm sticky top-24">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-muted-foreground" />
-              Assinatura e Pagamento
+              Status do Plano
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex justify-between items-center p-4 border rounded-lg bg-muted/30">
-              <div>
-                <p className="font-semibold text-foreground">Plano Saudável Premium</p>
-                <p className="text-sm text-muted-foreground">Próxima cobrança em 15/05/2026</p>
+            {loadingStatus ? (
+              <div className="space-y-3">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
-              <div className="text-right">
-                <p className="font-bold text-lg">R$ 149,90</p>
-                <p className="text-xs text-primary font-medium">Ativo</p>
+            ) : subscription ? (
+              <>
+                <div className="flex justify-between items-center p-4 border rounded-lg bg-muted/30">
+                  <div>
+                    <p className="font-semibold text-foreground">
+                      Plano {planNames[subscription.plan] || 'Premium'}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Renovação:{' '}
+                      {subscription.renewal_date
+                        ? format(new Date(subscription.renewal_date), 'dd/MM/yyyy')
+                        : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-lg">
+                      {subscription.monthly_price
+                        ? `R$ ${subscription.monthly_price.toFixed(2).replace('.', ',')}`
+                        : '-'}
+                    </p>
+                    <p
+                      className={`text-xs font-medium ${subscription.status === 'active' ? 'text-emerald-600' : 'text-amber-600'}`}
+                    >
+                      {subscription.status === 'active' ? 'Ativo' : 'Pendente'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-sm text-muted-foreground bg-muted p-3 rounded-lg flex items-start gap-2">
+                  <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                  <p>
+                    Benefício do plano: consultas a cada {planIntervals[subscription.plan]} dias.
+                    {mostRecentApt &&
+                      ` Última: ${format(new Date(mostRecentApt.date), 'dd/MM/yyyy')}.`}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="text-center p-4 border border-dashed rounded-lg">
+                <p className="text-muted-foreground text-sm mb-3">
+                  Você não possui uma assinatura ativa.
+                </p>
               </div>
-            </div>
-            <Button variant="outline" className="w-full">
-              Gerenciar Assinatura
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="lg:col-span-5">
-        <Card className="border-border/50 shadow-sm sticky top-24">
-          <CardHeader>
-            <CardTitle>Meu Perfil</CardTitle>
-            <CardDescription>
-              Atualize suas informações pessoais e biometria inicial.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome Completo</Label>
-              <Input defaultValue="Mariana Silva" />
-            </div>
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input type="email" defaultValue="mariana@example.com" />
-            </div>
-            <div className="space-y-2">
-              <Label>Telefone</Label>
-              <Input type="tel" defaultValue="(11) 98765-4321" />
-            </div>
-            <div className="grid grid-cols-2 gap-4 pt-2 border-t mt-4">
-              <div className="space-y-2">
-                <Label>Meta de Peso (kg)</Label>
-                <Input type="number" defaultValue="65" />
-              </div>
-              <div className="space-y-2">
-                <Label>Altura (cm)</Label>
-                <Input type="number" defaultValue="165" />
-              </div>
-            </div>
-            <Button onClick={handleSave} className="w-full mt-4">
-              Salvar Alterações
-            </Button>
+            )}
           </CardContent>
         </Card>
       </div>

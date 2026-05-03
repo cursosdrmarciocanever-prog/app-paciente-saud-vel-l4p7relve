@@ -19,3 +19,16 @@ export const createAppointment = (data: Partial<AppointmentRecord>) =>
 
 export const updateAppointment = (id: string, data: Partial<AppointmentRecord>) =>
   pb.collection('appointments').update(id, data)
+
+export const checkDailyCapacity = async (dateStr: string, type: 'presencial' | 'telemedicina') => {
+  try {
+    const records = await pb.collection('appointments').getList(1, 1, {
+      filter: `date ~ "${dateStr}" && type = "${type}" && status != "cancelado"`,
+      requestKey: null,
+    })
+    return records.totalItems
+  } catch (e) {
+    console.error(e)
+    return 0
+  }
+}
