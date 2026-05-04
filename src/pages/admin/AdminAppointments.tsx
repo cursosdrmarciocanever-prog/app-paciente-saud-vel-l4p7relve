@@ -18,7 +18,13 @@ import {
 import { getAppointmentsAdmin, cancelAppointment } from '@/services/admin'
 import { useToast } from '@/hooks/use-toast'
 import { useRealtime } from '@/hooks/use-realtime'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { AppointmentBookingFlow } from '@/components/appointments/AppointmentBookingFlow'
 import { useAuth } from '@/hooks/use-auth'
 import { Plus } from 'lucide-react'
@@ -85,16 +91,6 @@ export function AdminAppointments() {
         </Button>
       </div>
       <div className="border rounded-md">
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Tipo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os Tipos</SelectItem>
-            <SelectItem value="presencial">Presencial</SelectItem>
-            <SelectItem value="telemedicina">Telemedicina</SelectItem>
-          </SelectContent>
-        </Select>
-
         <Table>
           <TableHeader>
             <TableRow>
@@ -183,13 +179,13 @@ export function AdminAppointments() {
           </DialogHeader>
           <div className="mt-4">
             {user && (
-              <AppointmentBookingFlow 
-                userId={user.id} 
-                isAdmin={true} 
+              <AppointmentBookingFlow
+                userId={user.id}
+                isAdmin={true}
                 onSuccess={() => {
                   setOpenNew(false)
                   loadData()
-                }} 
+                }}
               />
             )}
           </div>
