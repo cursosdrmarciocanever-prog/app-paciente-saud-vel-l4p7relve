@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Users, CreditCard, Calendar, FileText, BarChart3, Bell } from 'lucide-react'
+import { Users, CreditCard, Calendar, FileText, BarChart3, Bell, PieChart } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -16,9 +16,10 @@ const navItems = [
   { title: 'Dashboard', url: '/admin', icon: BarChart3 },
   { title: 'Usuários', url: '/admin/usuarios', icon: Users },
   { title: 'Assinaturas', url: '/admin/assinaturas', icon: FileText },
-  { title: 'Consultas', url: '/admin/consultas', icon: Calendar },
+  { title: 'Agendamentos', url: '/admin/consultas', icon: Calendar },
   { title: 'Pagamentos', url: '/admin/pagamentos', icon: CreditCard },
   { title: 'Notificações', url: '/admin/notificacoes', icon: Bell },
+  { title: 'Relatórios', url: '/admin/relatorios', icon: PieChart },
 ]
 
 export function AdminSidebar() {

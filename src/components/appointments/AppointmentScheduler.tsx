@@ -20,9 +20,10 @@ import { Clock } from 'lucide-react'
 
 interface Props {
   onSelectSlot: (date: Date) => void
+  isAdmin?: boolean
 }
 
-export function AppointmentScheduler({ onSelectSlot }: Props) {
+export function AppointmentScheduler({ onSelectSlot, isAdmin }: Props) {
   const [month, setMonth] = useState<Date>(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [occupied, setOccupied] = useState<string[]>([])
@@ -55,14 +56,17 @@ export function AppointmentScheduler({ onSelectSlot }: Props) {
     if (!selectedDate) return []
     const times: { date: Date; occupied: boolean; past: boolean }[] = []
     const now = new Date()
-    for (let i = 8; i <= 17; i++) {
+    const startHour = isAdmin ? 0 : 8
+    const endHour = isAdmin ? 23 : 17
+    for (let i = startHour; i <= endHour; i++) {
       for (const m of [0, 30]) {
         const slotDate = setMinutes(setHours(selectedDate, i), m)
         slotDate.setSeconds(0, 0)
+        const isOccupied = occupiedDates.includes(slotDate.getTime())
         times.push({
           date: slotDate,
-          occupied: occupiedDates.includes(slotDate.getTime()),
-          past: slotDate.getTime() <= now.getTime(),
+          occupied: !isAdmin && isOccupied,
+          past: !isAdmin && slotDate.getTime() <= now.getTime(),
         })
       }
     }
@@ -83,7 +87,10 @@ export function AppointmentScheduler({ onSelectSlot }: Props) {
           month={month}
           onMonthChange={setMonth}
           locale={ptBR}
-          disabled={(date) => date < startOfDay(new Date()) || date.getDay() === 0}
+          disabled={(date) => {
+            if (isAdmin) return false
+            return date < startOfDay(new Date()) || date.getDay() === 0
+          }}
           className="border rounded-md p-3"
           modifiers={{ hasAppt: (date) => hasAppointments(date) }}
           modifiersStyles={{

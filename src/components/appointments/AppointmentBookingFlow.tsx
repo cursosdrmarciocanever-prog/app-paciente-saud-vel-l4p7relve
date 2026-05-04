@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useAuth } from '@/hooks/use-auth'
 
 interface Props {
   userId: string
@@ -16,6 +17,8 @@ interface Props {
 
 export function AppointmentBookingFlow({ userId, subscriptionId, isAdmin, onSuccess }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<Date | null>(null)
+  const { user } = useAuth()
+  const effectiveIsAdmin = isAdmin ?? user?.role === 'admin'
 
   if (selectedSlot) {
     return (
@@ -34,7 +37,7 @@ export function AppointmentBookingFlow({ userId, subscriptionId, isAdmin, onSucc
             <AppointmentForm
               selectedDate={selectedSlot}
               currentUserId={userId}
-              isAdmin={isAdmin}
+              isAdmin={effectiveIsAdmin}
               subscriptionId={subscriptionId}
               onSuccess={() => {
                 setSelectedSlot(null)
@@ -54,7 +57,7 @@ export function AppointmentBookingFlow({ userId, subscriptionId, isAdmin, onSucc
         <CardDescription>Selecione a data e o horário para agendar.</CardDescription>
       </CardHeader>
       <CardContent>
-        <AppointmentScheduler onSelectSlot={setSelectedSlot} />
+        <AppointmentScheduler onSelectSlot={setSelectedSlot} isAdmin={effectiveIsAdmin} />
       </CardContent>
     </Card>
   )
