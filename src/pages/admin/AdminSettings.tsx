@@ -13,6 +13,8 @@ export function AdminSettings() {
   const [settingsId, setSettingsId] = useState<string | null>(null)
   const [maxPresencial, setMaxPresencial] = useState<number | ''>(5)
   const [maxTelemedicina, setMaxTelemedicina] = useState<number | ''>(10)
+  const [startTime, setStartTime] = useState<string>('08:00')
+  const [endTime, setEndTime] = useState<string>('18:00')
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
 
@@ -24,6 +26,8 @@ export function AdminSettings() {
         setSettingsId(s.id)
         setMaxPresencial(s.max_daily_presencial)
         setMaxTelemedicina(s.max_daily_telemedicina)
+        setStartTime(s.start_time || '08:00')
+        setEndTime(s.end_time || '18:00')
       }
     } catch (e) {
       console.error(e)
@@ -42,6 +46,8 @@ export function AdminSettings() {
         setSettingsId(e.record.id)
         setMaxPresencial(e.record.max_daily_presencial)
         setMaxTelemedicina(e.record.max_daily_telemedicina)
+        setStartTime(e.record.start_time || '08:00')
+        setEndTime(e.record.end_time || '18:00')
       }
     }
   })
@@ -60,11 +66,22 @@ export function AdminSettings() {
       return
     }
 
+    if (startTime >= endTime) {
+      toast({
+        title: 'Erro de Validação',
+        description: 'O horário de término deve ser posterior ao horário de início.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       const data = {
         max_daily_presencial: p,
         max_daily_telemedicina: t,
+        start_time: startTime,
+        end_time: endTime,
       }
       if (settingsId) {
         await pb.collection('settings').update(settingsId, data)
@@ -111,7 +128,7 @@ export function AdminSettings() {
           <form onSubmit={handleSave} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="presencial">Presencial</Label>
+                <Label htmlFor="presencial">Presencial (Max/Dia)</Label>
                 <Input
                   id="presencial"
                   type="number"
@@ -129,7 +146,7 @@ export function AdminSettings() {
                 </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="telemedicina">Telemedicina</Label>
+                <Label htmlFor="telemedicina">Telemedicina (Max/Dia)</Label>
                 <Input
                   id="telemedicina"
                   type="number"
@@ -145,6 +162,34 @@ export function AdminSettings() {
                 <p className="text-xs text-muted-foreground">Total de pacientes online por dia</p>
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="start_time">Horário de Início</Label>
+                <Input
+                  id="start_time"
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  required
+                  className="text-lg"
+                />
+                <p className="text-xs text-muted-foreground">Abertura da clínica</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="end_time">Horário de Término</Label>
+                <Input
+                  id="end_time"
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  required
+                  className="text-lg"
+                />
+                <p className="text-xs text-muted-foreground">Fechamento da clínica</p>
+              </div>
+            </div>
+
             <div className="flex justify-end pt-4">
               <Button type="submit" disabled={loading} className="w-full md:w-auto">
                 {loading ? 'Salvando...' : 'Salvar Alterações'}

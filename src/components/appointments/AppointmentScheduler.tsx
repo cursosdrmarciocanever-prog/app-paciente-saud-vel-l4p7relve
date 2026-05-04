@@ -14,6 +14,7 @@ import { ptBR } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { getOccupiedSlots } from '@/services/appointments'
+import { getSettings } from '@/services/settings'
 import { cn } from '@/lib/utils'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Clock } from 'lucide-react'
@@ -29,19 +30,26 @@ export function AppointmentScheduler({ onSelectSlot, isAdmin, type }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [occupied, setOccupied] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [businessHours, setBusinessHours] = useState({ start: '08:00', end: '18:00' })
 
-  const loadOccupied = async (m: Date) => {
+  const loadData = async (m: Date) => {
     setLoading(true)
     const start = startOfMonth(m).toISOString().replace('T', ' ')
     const end = endOfMonth(m).toISOString().replace('T', ' ')
-    const slots = await getOccupiedSlots(start, end, type)
+    const [slots, settings] = await Promise.all([getOccupiedSlots(start, end, type), getSettings()])
     setOccupied(slots)
+    if (settings) {
+      setBusinessHours({
+        start: settings.start_time || '08:00',
+        end: settings.end_time || '18:00',
+      })
+    }
     setLoading(false)
   }
 
   useEffect(() => {
-    loadOccupied(month)
-    const handleUpdate = () => loadOccupied(month)
+    loadData(month)
+    const handleUpdate = () => loadData(month)
     window.addEventListener('appointments-updated', handleUpdate)
     return () => window.removeEventListener('appointments-updated', handleUpdate)
   }, [month])
@@ -63,10 +71,31 @@ export function AppointmentScheduler({ onSelectSlot, isAdmin, type }: Props) {
     if (!selectedDate) return []
     const times: { date: Date; occupied: boolean; past: boolean }[] = []
     const now = new Date()
-    const startHour = isAdmin ? 0 : 8
-    const endHour = isAdmin ? 23 : 17
-    for (let i = startHour; i <= endHour; i++) {
+
+    let startHour = 0
+    let startMinute = 0
+    let endHour = 23
+    let endMinute = 59
+
+    if (!isAdmin) {
+      const [sH, sM] = businessHours.start.split(':').map(Number)
+      const [eH, eM] = businessHours.end.split(':').map(Number)
+      startHour = sH
+      startMinute = sM
+      endHour = eH
+      endMinute = eM
+    }
+
+    const iterStartHour = isAdmin ? 0 : startHour
+    const iterEndHour = isAdmin ? 23 : endHour
+
+    for (let i = iterStartHour; i <= iterEndHour; i++) {
       for (const m of [0, 30]) {
+        if (!isAdmin) {
+          if (i === startHour && m < startMinute) continue
+          if (i === endHour && m >= endMinute) continue
+        }
+
         const slotDate = setMinutes(setHours(selectedDate, i), m)
         slotDate.setSeconds(0, 0)
         const isOccupied = occupiedDates.includes(slotDate.getTime())
@@ -78,7 +107,7 @@ export function AppointmentScheduler({ onSelectSlot, isAdmin, type }: Props) {
       }
     }
     return times
-  }, [selectedDate, occupiedDates])
+  }, [selectedDate, occupiedDates, isAdmin, businessHours])
 
   const hasAppointments = (day: Date) => {
     return occupiedDates.some((time) => isSameDay(new Date(time), day))
