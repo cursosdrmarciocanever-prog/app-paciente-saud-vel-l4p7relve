@@ -1,5 +1,14 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Users, CreditCard, Calendar, FileText, BarChart3, Bell, PieChart } from 'lucide-react'
+import {
+  Users,
+  CreditCard,
+  Calendar,
+  FileText,
+  BarChart3,
+  Bell,
+  PieChart,
+  Settings,
+} from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +29,7 @@ const navItems = [
   { title: 'Pagamentos', url: '/admin/pagamentos', icon: CreditCard },
   { title: 'Notificações', url: '/admin/notificacoes', icon: Bell },
   { title: 'Relatórios', url: '/admin/relatorios', icon: PieChart },
+  { title: 'Configurações', url: '/admin/configuracoes', icon: Settings },
 ]
 
 export function AdminSidebar() {

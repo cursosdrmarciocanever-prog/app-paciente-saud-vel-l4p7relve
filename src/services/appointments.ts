@@ -33,11 +33,17 @@ export const checkDailyCapacity = async (dateStr: string, type: 'presencial' | '
   }
 }
 
-export const getOccupiedSlots = async (start: string, end: string): Promise<string[]> => {
+export const getOccupiedSlots = async (
+  start: string,
+  end: string,
+  type?: string,
+): Promise<string[]> => {
   try {
+    const params: Record<string, string> = { start, end }
+    if (type) params.type = type
     return await pb.send('/backend/v1/appointments/occupied', {
       method: 'GET',
-      params: { start, end },
+      params,
     })
   } catch (e) {
     console.error(e)

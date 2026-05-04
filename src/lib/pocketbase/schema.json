@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-04T00:57:15.127Z",
+  "generatedAt": "2026-05-04T01:03:18.549Z",
   "collections": [
     {
       "name": "users",
@@ -697,6 +697,46 @@
         "CREATE INDEX idx_payments_subscription ON payments (subscription)",
         "CREATE INDEX idx_payments_status ON payments (status)"
       ]
+    },
+    {
+      "name": "settings",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.role = 'admin'",
+        "view": "@request.auth.role = 'admin'",
+        "create": "@request.auth.role = 'admin'",
+        "update": "@request.auth.role = 'admin'",
+        "delete": "@request.auth.role = 'admin'"
+      },
+      "fields": [
+        {
+          "name": "max_daily_presencial",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "max_daily_telemedicina",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": []
     }
   ]
 }

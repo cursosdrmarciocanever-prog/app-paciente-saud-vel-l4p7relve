@@ -21,9 +21,10 @@ import { Clock } from 'lucide-react'
 interface Props {
   onSelectSlot: (date: Date) => void
   isAdmin?: boolean
+  type?: 'presencial' | 'telemedicina'
 }
 
-export function AppointmentScheduler({ onSelectSlot, isAdmin }: Props) {
+export function AppointmentScheduler({ onSelectSlot, isAdmin, type }: Props) {
   const [month, setMonth] = useState<Date>(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [occupied, setOccupied] = useState<string[]>([])
@@ -33,7 +34,7 @@ export function AppointmentScheduler({ onSelectSlot, isAdmin }: Props) {
     setLoading(true)
     const start = startOfMonth(m).toISOString().replace('T', ' ')
     const end = endOfMonth(m).toISOString().replace('T', ' ')
-    const slots = await getOccupiedSlots(start, end)
+    const slots = await getOccupiedSlots(start, end, type)
     setOccupied(slots)
     setLoading(false)
   }
@@ -46,10 +47,16 @@ export function AppointmentScheduler({ onSelectSlot, isAdmin }: Props) {
   }, [month])
 
   const occupiedDates = useMemo(() => {
-    return occupied.map((s) => {
-      const iso = s.includes('T') ? s : s.replace(' ', 'T')
-      return parseISO(iso).getTime()
-    })
+    return occupied
+      .filter((s) => !s.endsWith(' FULL'))
+      .map((s) => {
+        const iso = s.includes('T') ? s : s.replace(' ', 'T')
+        return parseISO(iso).getTime()
+      })
+  }, [occupied])
+
+  const fullDays = useMemo(() => {
+    return occupied.filter((s) => s.endsWith(' FULL')).map((s) => s.split(' ')[0])
   }, [occupied])
 
   const slots = useMemo(() => {
@@ -89,10 +96,15 @@ export function AppointmentScheduler({ onSelectSlot, isAdmin }: Props) {
           locale={ptBR}
           disabled={(date) => {
             if (isAdmin) return false
-            return date < startOfDay(new Date()) || date.getDay() === 0
+            if (date < startOfDay(new Date()) || date.getDay() === 0) return true
+            const dateStr = format(date, 'yyyy-MM-dd')
+            return fullDays.includes(dateStr)
           }}
           className="border rounded-md p-3"
-          modifiers={{ hasAppt: (date) => hasAppointments(date) }}
+          modifiers={{
+            hasAppt: (date) => hasAppointments(date),
+            full: (date) => fullDays.includes(format(date, 'yyyy-MM-dd')),
+          }}
           modifiersStyles={{
             hasAppt: {
               fontWeight: 'bold',

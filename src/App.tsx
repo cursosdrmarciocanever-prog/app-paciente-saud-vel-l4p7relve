@@ -25,6 +25,7 @@ import { AdminSubscriptions } from './pages/admin/AdminSubscriptions'
 import { AdminAppointments } from './pages/admin/AdminAppointments'
 import { AdminPayments } from './pages/admin/AdminPayments'
 import { AdminNotifications } from './pages/admin/AdminNotifications'
+import { AdminSettings } from './pages/admin/AdminSettings'
 
 const AppRoutes = () => {
   const { user, loading } = useAuth()
@@ -53,6 +54,7 @@ const AppRoutes = () => {
         <Route path="consultas" element={<AdminAppointments />} />
         <Route path="pagamentos" element={<AdminPayments />} />
         <Route path="notificacoes" element={<AdminNotifications />} />
+        <Route path="configuracoes" element={<AdminSettings />} />
         <Route path="*" element={<NotFound />} />
       </Route>
 
