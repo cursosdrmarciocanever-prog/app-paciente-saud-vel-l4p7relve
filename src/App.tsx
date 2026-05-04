@@ -44,22 +44,19 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route
-        path="/admin"
-        element={user.role === 'admin' ? <AdminLayout /> : <Navigate to="/" replace />}
-      >
-        <Route index element={<AdminDashboard />} />
-        <Route path="usuarios" element={<AdminUsers />} />
-        <Route path="assinaturas" element={<AdminSubscriptions />} />
-        <Route path="consultas" element={<AdminAppointments />} />
-        <Route path="pagamentos" element={<AdminPayments />} />
-        <Route path="notificacoes" element={<AdminNotifications />} />
-        <Route path="configuracoes" element={<AdminSettings />} />
-        <Route path="*" element={<NotFound />} />
-      </Route>
-
       {user.role === 'admin' ? (
-        <Route path="*" element={<Navigate to="/admin" replace />} />
+        <Route element={<AdminLayout />}>
+          <Route path="/" element={<AdminDashboard />} />
+          <Route path="/admin" element={<Navigate to="/" replace />} />
+          <Route path="/admin/usuarios" element={<AdminUsers />} />
+          <Route path="/admin/assinaturas" element={<AdminSubscriptions />} />
+          <Route path="/admin/consultas" element={<AdminAppointments />} />
+          <Route path="/admin/pagamentos" element={<AdminPayments />} />
+          <Route path="/admin/notificacoes" element={<AdminNotifications />} />
+          <Route path="/admin/configuracoes" element={<AdminSettings />} />
+          <Route path="/admin/videos" element={<NotFound />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
       ) : (
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />

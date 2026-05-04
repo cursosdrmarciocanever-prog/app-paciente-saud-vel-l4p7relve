@@ -24,6 +24,39 @@ export const getAdminStats = async () => {
   return { totalUsers, activeSubs, monthlyRevenue, churnRate, users, subs, payments }
 }
 
+export const getAdminDashboardMetrics = async () => {
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+
+  const startIso = todayStart.toISOString().replace('T', ' ')
+  const endIso = todayEnd.toISOString().replace('T', ' ')
+
+  const [todayAppointments, pendingPayments, activePatients, settingsList] = await Promise.all([
+    pb.collection('appointments').getList(1, 1, {
+      filter: `status = "agendado" && date >= "${startIso}" && date <= "${endIso}"`,
+    }),
+    pb.collection('payments').getList(1, 1, {
+      filter: `status = "pendente"`,
+    }),
+    pb.collection('users').getList(1, 1, {
+      filter: `role = "paciente"`,
+    }),
+    pb.collection('settings').getList(1, 1),
+  ])
+
+  const settings = settingsList.items[0] || { max_daily_presencial: 0, max_daily_telemedicina: 0 }
+
+  return {
+    todayAppointmentsCount: todayAppointments.totalItems,
+    pendingPaymentsCount: pendingPayments.totalItems,
+    activePatientsCount: activePatients.totalItems,
+    capacityPresencial: settings.max_daily_presencial,
+    capacityTelemedicina: settings.max_daily_telemedicina,
+  }
+}
+
 export const getSubscriptions = () =>
   pb.collection('subscriptions').getFullList({ sort: '-created', expand: 'user' })
 
