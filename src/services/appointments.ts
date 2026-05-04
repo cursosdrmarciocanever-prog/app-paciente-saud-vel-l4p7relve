@@ -32,3 +32,15 @@ export const checkDailyCapacity = async (dateStr: string, type: 'presencial' | '
     return 0
   }
 }
+
+export const getOccupiedSlots = async (start: string, end: string): Promise<string[]> => {
+  try {
+    return await pb.send('/backend/v1/appointments/occupied', {
+      method: 'GET',
+      params: { start, end },
+    })
+  } catch (e) {
+    console.error(e)
+    return []
+  }
+}

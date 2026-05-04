@@ -1,19 +1,9 @@
 import { useState, useEffect } from 'react'
 import { AppointmentList } from '@/components/appointments/AppointmentList'
-import { AppointmentForm } from '@/components/appointments/AppointmentForm'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
-import { CreditCard, Plus, Info } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+import { AppointmentBookingFlow } from '@/components/appointments/AppointmentBookingFlow'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { CreditCard, Info } from 'lucide-react'
 import { getActiveSubscription, SubscriptionRecord } from '@/services/subscriptions'
 import { AppointmentRecord } from '@/services/appointments'
 import { useAuth } from '@/hooks/use-auth'
@@ -37,10 +27,10 @@ const planNames: Record<string, string> = {
 
 export default function Appointments() {
   const { user } = useAuth()
-  const [open, setOpen] = useState(false)
   const [subscription, setSubscription] = useState<SubscriptionRecord | null>(null)
   const [mostRecentApt, setMostRecentApt] = useState<AppointmentRecord | null>(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
+  const [activeTab, setActiveTab] = useState('list')
 
   useEffect(() => {
     if (!user) return
@@ -81,76 +71,64 @@ export default function Appointments() {
     }
   }
 
-  const handleOpenDialog = () => {
-    if (!subscription || subscription.status !== 'active') {
-      toast.error('Você precisa de uma assinatura ativa para agendar consultas.')
-      return
-    }
-    if (!isEligible && nextAvailableDate) {
-      toast.error(
-        `Você poderá agendar novamente a partir de ${format(nextAvailableDate, 'dd/MM/yyyy')}.`,
-      )
-      return
-    }
-    setOpen(true)
-  }
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <div className="lg:col-span-7 space-y-6">
-        <div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight mb-1">Minhas Consultas</h2>
-              <p className="text-muted-foreground">
-                Gerencie seus encontros com a equipe multidisciplinar.
-              </p>
-            </div>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <Button
-                onClick={handleOpenDialog}
-                disabled={
-                  loadingStatus ||
-                  subscription?.status !== 'active' ||
-                  (!isEligible && nextAvailableDate !== null)
-                }
-              >
-                <Plus className="w-4 h-4 mr-2" /> Agendar Consulta
-              </Button>
-              <DialogContent className="sm:max-w-[450px]">
-                <DialogHeader>
-                  <DialogTitle>Agendar Consulta</DialogTitle>
-                  <DialogDescription>
-                    Preencha os detalhes para agendar seu atendimento.
-                  </DialogDescription>
-                </DialogHeader>
-                {user && subscription && (
-                  <AppointmentForm
-                    userId={user.id}
-                    subscriptionId={subscription.id}
-                    onSuccess={() => {
-                      setOpen(false)
-                      window.dispatchEvent(new Event('appointments-updated'))
-                    }}
-                  />
-                )}
-              </DialogContent>
-            </Dialog>
-          </div>
-          {!isEligible && nextAvailableDate && (
-            <Alert className="mb-6 bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-900">
-              <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              <AlertTitle>Agendamento Indisponível</AlertTitle>
-              <AlertDescription>
-                Pelo seu plano <strong>{planNames[subscription?.plan || '']}</strong>, você pode
-                agendar consultas a cada {planIntervals[subscription?.plan || '']} dias. Sua próxima
-                data disponível é <strong>{format(nextAvailableDate, 'dd/MM/yyyy')}</strong>.
-              </AlertDescription>
-            </Alert>
-          )}
-          <AppointmentList onScheduleClick={handleOpenDialog} />
+        <div className="flex flex-col mb-6">
+          <h2 className="text-2xl font-bold tracking-tight mb-1">Minhas Consultas</h2>
+          <p className="text-muted-foreground">
+            Gerencie seus encontros com a equipe multidisciplinar.
+          </p>
         </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="mb-6 w-full sm:w-auto grid grid-cols-2">
+            <TabsTrigger value="list">Suas Consultas</TabsTrigger>
+            <TabsTrigger value="schedule">Agendar Nova</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="list" className="space-y-4">
+            <AppointmentList onScheduleClick={() => setActiveTab('schedule')} />
+          </TabsContent>
+
+          <TabsContent value="schedule">
+            {!loadingStatus && (!subscription || subscription.status !== 'active') ? (
+              <Alert className="bg-destructive/10 text-destructive border-destructive/20">
+                <Info className="h-4 w-4" />
+                <AlertTitle>Assinatura Inativa</AlertTitle>
+                <AlertDescription>
+                  Você precisa de uma assinatura ativa para agendar consultas.
+                </AlertDescription>
+              </Alert>
+            ) : !isEligible && nextAvailableDate ? (
+              <Alert className="bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/30 dark:text-amber-200 dark:border-amber-900">
+                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertTitle>Agendamento Indisponível</AlertTitle>
+                <AlertDescription>
+                  Pelo seu plano <strong>{planNames[subscription?.plan || '']}</strong>, você pode
+                  agendar consultas a cada {planIntervals[subscription?.plan || '']} dias. Sua
+                  próxima data disponível é{' '}
+                  <strong>{format(nextAvailableDate, 'dd/MM/yyyy')}</strong>.
+                </AlertDescription>
+              </Alert>
+            ) : user && subscription ? (
+              <AppointmentBookingFlow
+                userId={user.id}
+                subscriptionId={subscription.id}
+                onSuccess={() => {
+                  window.dispatchEvent(new Event('appointments-updated'))
+                  setActiveTab('list')
+                }}
+              />
+            ) : (
+              <div className="space-y-3">
+                <Skeleton className="h-64 w-full" />
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
+
       <div className="lg:col-span-5 space-y-6">
         <Card className="border-border/50 shadow-sm sticky top-24">
           <CardHeader>

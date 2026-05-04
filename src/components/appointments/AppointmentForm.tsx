@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,69 +21,63 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-import { createAppointment, checkDailyCapacity } from '@/services/appointments'
-import { startOfDay, format } from 'date-fns'
+import { createAppointment } from '@/services/appointments'
+import { getUsers } from '@/services/users'
 
-const appointmentSchema = z.object({
-  date: z
-    .string()
-    .min(1, 'Data é obrigatória')
-    .refine((d) => {
-      const date = new Date(d + 'T12:00:00')
-      return date.getDay() !== 0
-    }, 'Agendamentos não são permitidos aos domingos')
-    .refine((d) => {
-      const date = new Date(d + 'T00:00:00')
-      return date >= startOfDay(new Date())
-    }, 'A data não pode estar no passado'),
-  time: z.string().min(1, 'Horário é obrigatório'),
+const schema = z.object({
   type: z.enum(['presencial', 'telemedicina'], { required_error: 'Tipo é obrigatório' }),
   title: z.string().min(3, 'Motivo deve ter pelo menos 3 caracteres'),
+  notes: z.string().optional(),
+  userId: z.string().min(1, 'Usuário é obrigatório'),
 })
 
-type AppointmentFormValues = z.infer<typeof appointmentSchema>
-
-const timeOptions = Array.from({ length: 21 }, (_, i) => {
-  const hour = Math.floor(i / 2) + 8
-  const min = i % 2 === 0 ? '00' : '30'
-  return `${hour.toString().padStart(2, '0')}:${min}`
-})
+type FormValues = z.infer<typeof schema>
 
 interface Props {
-  userId: string
-  subscriptionId: string
+  selectedDate: Date
+  currentUserId: string
+  isAdmin?: boolean
+  subscriptionId?: string
   onSuccess: () => void
 }
 
-export function AppointmentForm({ userId, subscriptionId, onSuccess }: Props) {
-  const form = useForm<AppointmentFormValues>({
-    resolver: zodResolver(appointmentSchema),
-    defaultValues: { date: '', time: '', type: 'telemedicina', title: '' },
+export function AppointmentForm({
+  selectedDate,
+  currentUserId,
+  isAdmin,
+  subscriptionId,
+  onSuccess,
+}: Props) {
+  const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([])
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      type: 'telemedicina',
+      title: isAdmin ? 'Consulta' : 'Consulta de Rotina',
+      notes: '',
+      userId: currentUserId,
+    },
   })
 
-  const onSubmit = async (values: AppointmentFormValues) => {
+  useEffect(() => {
+    if (isAdmin) {
+      getUsers().then(setUsers).catch(console.error)
+    }
+  }, [isAdmin])
+
+  const onSubmit = async (values: FormValues) => {
     try {
-      const count = await checkDailyCapacity(values.date, values.type)
-      const max = values.type === 'presencial' ? 5 : 10
-      if (count >= max) {
-        toast.error(
-          `Limite de agendamentos atingido para este dia (${values.type}). Tente outra data.`,
-        )
-        return
-      }
-
-      const dateTime = new Date(`${values.date}T${values.time}:00`).toISOString()
-
       await createAppointment({
-        user: userId,
+        user: values.userId,
         title: values.title,
-        date: dateTime,
+        date: selectedDate.toISOString(),
         type: values.type,
         status: 'agendado',
         subscription: subscriptionId,
+        notes: values.notes,
       })
-
-      toast.success('Agendamento confirmado!')
+      toast.success('Agendamento realizado com sucesso!')
       form.reset()
       onSuccess()
     } catch (err) {
@@ -92,7 +87,34 @@ export function AppointmentForm({ userId, subscriptionId, onSuccess }: Props) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {isAdmin && (
+          <FormField
+            control={form.control}
+            name="userId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Paciente</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o paciente" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name || u.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
         <FormField
           control={form.control}
           name="type"
@@ -114,45 +136,7 @@ export function AppointmentForm({ userId, subscriptionId, onSuccess }: Props) {
             </FormItem>
           )}
         />
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Data</FormLabel>
-                <FormControl>
-                  <Input type="date" min={format(new Date(), 'yyyy-MM-dd')} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="time"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Horário</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent className="max-h-[200px]">
-                    {timeOptions.map((t) => (
-                      <SelectItem key={t} value={t}>
-                        {t}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+
         <FormField
           control={form.control}
           name="title"
@@ -160,8 +144,22 @@ export function AppointmentForm({ userId, subscriptionId, onSuccess }: Props) {
             <FormItem>
               <FormLabel>Motivo da Consulta</FormLabel>
               <FormControl>
+                <Input placeholder="Ex: Acompanhamento..." {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Observações (Opcional)</FormLabel>
+              <FormControl>
                 <Textarea
-                  placeholder="Ex: Acompanhamento nutricional..."
+                  placeholder="Detalhes adicionais..."
                   className="resize-none"
                   rows={3}
                   {...field}
@@ -171,6 +169,7 @@ export function AppointmentForm({ userId, subscriptionId, onSuccess }: Props) {
             </FormItem>
           )}
         />
+
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? 'Processando...' : 'Confirmar Agendamento'}
         </Button>

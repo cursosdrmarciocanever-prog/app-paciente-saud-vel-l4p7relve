@@ -18,7 +18,10 @@ import {
 import { getAppointmentsAdmin, cancelAppointment } from '@/services/admin'
 import { useToast } from '@/hooks/use-toast'
 import { useRealtime } from '@/hooks/use-realtime'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { AppointmentBookingFlow } from '@/components/appointments/AppointmentBookingFlow'
+import { useAuth } from '@/hooks/use-auth'
+import { Plus } from 'lucide-react'
 
 export function AdminAppointments() {
   const [appointments, setAppointments] = useState<any[]>([])
@@ -26,6 +29,8 @@ export function AdminAppointments() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
   const { toast } = useToast()
+  const { user } = useAuth()
+  const [openNew, setOpenNew] = useState(false)
 
   const loadData = () => getAppointmentsAdmin().then(setAppointments)
   useEffect(() => {
@@ -50,8 +55,36 @@ export function AdminAppointments() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Oversight de Consultas</h1>
-      <div className="flex gap-4">
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex gap-4">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Tipos</SelectItem>
+              <SelectItem value="presencial">Presencial</SelectItem>
+              <SelectItem value="telemedicina">Telemedicina</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os Status</SelectItem>
+              <SelectItem value="agendado">Agendado</SelectItem>
+              <SelectItem value="concluido">Concluído</SelectItem>
+              <SelectItem value="cancelado">Cancelado</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <Button onClick={() => setOpenNew(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Agendar Consulta
+        </Button>
+      </div>
+      <div className="border rounded-md">
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Tipo" />
           </SelectTrigger>
@@ -61,19 +94,7 @@ export function AdminAppointments() {
             <SelectItem value="telemedicina">Telemedicina</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os Status</SelectItem>
-            <SelectItem value="agendado">Agendado</SelectItem>
-            <SelectItem value="concluido">Concluído</SelectItem>
-            <SelectItem value="cancelado">Cancelado</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="border rounded-md">
+
         <Table>
           <TableHeader>
             <TableRow>
@@ -149,6 +170,29 @@ export function AdminAppointments() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={openNew} onOpenChange={setOpenNew}>
+        <DialogContent className="sm:max-w-[700px] bg-background">
+          <DialogHeader>
+            <DialogTitle>Agendar Nova Consulta (Admin)</DialogTitle>
+            <DialogDescription>
+              Marque uma consulta para qualquer paciente do sistema.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {user && (
+              <AppointmentBookingFlow 
+                userId={user.id} 
+                isAdmin={true} 
+                onSuccess={() => {
+                  setOpenNew(false)
+                  loadData()
+                }} 
+              />
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
