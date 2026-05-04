@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form'
+import pb from '@/lib/pocketbase/client'
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -35,7 +36,11 @@ export default function Login() {
         toast.error('Usuário ou senha incorretos.')
       } else {
         toast.success('Bem-vindo!')
-        navigate('/dashboard')
+        if (pb.authStore.record?.role === 'admin') {
+          navigate('/admin')
+        } else {
+          navigate('/')
+        }
       }
     } catch (err) {
       toast.error('Erro inesperado ao fazer login.')

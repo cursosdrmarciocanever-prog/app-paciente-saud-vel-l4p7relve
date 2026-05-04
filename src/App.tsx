@@ -58,24 +58,24 @@ const AppRoutes = () => {
         <Route path="*" element={<NotFound />} />
       </Route>
 
-      <Route element={<Layout />}>
-        <Route
-          path="/"
-          element={user.role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />}
-        />
-        <Route path="/dashboard" element={<Navigate to="/" replace />} />
-        <Route path="/evolucao" element={<Evolution />} />
-        <Route path="/alimentacao" element={<Nutrition />} />
-        <Route path="/biblioteca" element={<Library />} />
-        <Route path="/consultas" element={<Appointments />} />
-        <Route path="/bioimpedancia" element={<Bioimpedance />} />
-        <Route path="/fotos" element={<Photos />} />
-        <Route path="/configuracoes" element={<Settings />} />
-        <Route path="/planos" element={<PaymentPending />} />
-        <Route path="/checkout/:planId" element={<Checkout />} />
-      </Route>
-
-      <Route path="*" element={<NotFound />} />
+      {user.role === 'admin' ? (
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      ) : (
+        <Route element={<Layout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/dashboard" element={<Navigate to="/" replace />} />
+          <Route path="/evolucao" element={<Evolution />} />
+          <Route path="/alimentacao" element={<Nutrition />} />
+          <Route path="/biblioteca" element={<Library />} />
+          <Route path="/consultas" element={<Appointments />} />
+          <Route path="/bioimpedancia" element={<Bioimpedance />} />
+          <Route path="/fotos" element={<Photos />} />
+          <Route path="/configuracoes" element={<Settings />} />
+          <Route path="/planos" element={<PaymentPending />} />
+          <Route path="/checkout/:planId" element={<Checkout />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      )}
     </Routes>
   )
 }

@@ -22,10 +22,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (pb.authStore.isValid) {
+          await pb.collection('users').authRefresh()
+        }
+      } catch (error) {
+        pb.authStore.clear()
+      } finally {
+        setUser(pb.authStore.record)
+        setLoading(false)
+      }
+    }
+
+    initAuth()
+
     const unsubscribe = pb.authStore.onChange((_token, record) => {
       setUser(record)
     })
-    setLoading(false)
+
     return () => {
       unsubscribe()
     }
