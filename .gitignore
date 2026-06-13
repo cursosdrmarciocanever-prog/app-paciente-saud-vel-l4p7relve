@@ -34,3 +34,6 @@ screenshot.png
 
 # Environment variables
 .env*
+
+# Runtime local do PocketBase (não versionar)
+pb_runtime/

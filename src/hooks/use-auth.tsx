@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import pb from '@/lib/pocketbase/client'
+import type { AuthModel } from 'pocketbase'
 
 interface AuthContextType {
-  user: any
+  user: AuthModel | null
   signUp: (data: any) => Promise<{ error: any }>
-  signIn: (email: string, password: string) => Promise<{ error: any }>
+  signIn: (data: any) => Promise<{ error: any }>
   signOut: () => void
   loading: boolean
 }
@@ -18,19 +19,33 @@ export const useAuth = () => {
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<any>(pb.authStore.record)
+  const [user, setUser] = useState<AuthModel | null>(
+    pb.authStore.isValid ? pb.authStore.record : null,
+  )
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let isMounted = true
+
     const initAuth = async () => {
-      try {
-        if (pb.authStore.isValid) {
+      if (pb.authStore.isValid) {
+        try {
           await pb.collection('users').authRefresh()
+          if (isMounted) {
+            setUser(pb.authStore.record)
+          }
+        } catch (error: any) {
+          // Only clear auth state if it's a genuine auth error (4xx)
+          // If it's a network error (0) or 5xx, keep the current session
+          if (error?.status >= 400 && error?.status < 500) {
+            pb.authStore.clear()
+            if (isMounted) {
+              setUser(null)
+            }
+          }
         }
-      } catch (error) {
-        pb.authStore.clear()
-      } finally {
-        setUser(pb.authStore.record)
+      }
+      if (isMounted) {
         setLoading(false)
       }
     }
@@ -38,35 +53,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initAuth()
 
     const unsubscribe = pb.authStore.onChange((_token, record) => {
-      setUser(record)
+      if (isMounted) {
+        setUser(pb.authStore.isValid ? record : null)
+      }
     })
 
     return () => {
+      isMounted = false
       unsubscribe()
     }
   }, [])
 
   const signUp = async (data: any) => {
     try {
-      await pb.collection('users').create({
-        email: data.email,
-        password: data.password,
-        passwordConfirm: data.passwordConfirm || data.password,
-        name: data.name,
-        weekly_goal: data.weekly_goal || 3,
-        daily_goal_minutes: data.daily_goal_minutes || 30,
-        is_paid: false,
-        role: 'paciente',
-      })
+      await pb.collection('users').create(data)
+      const authData = await pb.collection('users').authWithPassword(data.email, data.password)
+      setUser(authData.record)
       return { error: null }
     } catch (error) {
       return { error }
     }
   }
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (data: any) => {
     try {
-      await pb.collection('users').authWithPassword(email, password)
+      const authData = await pb.collection('users').authWithPassword(data.email, data.password)
+      setUser(authData.record)
       return { error: null }
     } catch (error) {
       return { error }

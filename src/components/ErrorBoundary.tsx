@@ -1,17 +1,21 @@
-import React, { Component, ErrorInfo, ReactNode } from 'react'
+import { Component, ReactNode, ErrorInfo } from 'react'
+import { Button } from '@/components/ui/button'
+import { AlertCircle } from 'lucide-react'
 
 interface Props {
   children?: ReactNode
+  onRetry?: () => void
 }
 
 interface State {
   hasError: boolean
-  error?: Error
+  error: Error | null
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
+    error: null,
   }
 
   public static getDerivedStateFromError(error: Error): State {
@@ -19,28 +23,28 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo)
+    console.error('Uncaught error in ErrorBoundary:', error, errorInfo)
+  }
+
+  public handleRetry = () => {
+    this.setState({ hasError: false, error: null })
+    if (this.props.onRetry) {
+      this.props.onRetry()
+    }
   }
 
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4 text-center">
-          <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
-            <h1 className="text-2xl font-bold text-red-600 mb-4">Ops, algo deu errado!</h1>
-            <p className="text-gray-600 mb-6">
-              Ocorreu um erro inesperado no aplicativo. Nossa equipe foi notificada.
-            </p>
-            <div className="bg-red-50 text-red-800 text-sm p-4 rounded text-left overflow-auto max-h-40 mb-6">
-              {this.state.error?.message}
-            </div>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded transition-colors w-full"
-            >
-              Tentar Novamente
-            </button>
-          </div>
+        <div className="flex h-full min-h-[400px] flex-col items-center justify-center gap-4 p-4 text-center bg-white rounded-lg">
+          <AlertCircle className="h-12 w-12 text-destructive" />
+          <h2 className="text-xl font-bold text-foreground">Algo deu errado</h2>
+          <p className="text-sm text-foreground/70">
+            Ocorreu um erro inesperado ao carregar o chat.
+          </p>
+          <Button onClick={this.handleRetry} variant="default">
+            Tentar Novamente
+          </Button>
         </div>
       )
     }

@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-05-04T01:26:17.494Z",
+  "generatedAt": "2026-06-08T20:58:35.835Z",
   "collections": [
     {
       "name": "users",
       "type": "auth",
       "apiRules": {
-        "list": "id = @request.auth.id || @request.auth.role = 'admin' || @request.auth.role = 'financeiro'",
-        "view": "id = @request.auth.id || @request.auth.role = 'admin' || @request.auth.role = 'financeiro'",
+        "list": "id = @request.auth.id",
+        "view": "id = @request.auth.id",
         "create": "",
-        "update": "id = @request.auth.id || @request.auth.role = 'admin'",
-        "delete": "id = @request.auth.id || @request.auth.role = 'admin'"
+        "update": "id = @request.auth.id",
+        "delete": "id = @request.auth.id"
       },
       "fields": [
         {
@@ -29,39 +29,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        },
-        {
-          "name": "weekly_goal",
-          "type": "number",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "daily_goal_minutes",
-          "type": "number",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "is_paid",
-          "type": "bool",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "role",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["admin", "financeiro", "paciente"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -70,311 +50,49 @@
       ]
     },
     {
-      "name": "bioimpedance",
+      "name": "assinaturas",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && user = @request.auth.id",
-        "view": "@request.auth.id != '' && user = @request.auth.id",
-        "create": "@request.auth.id != '' && user = @request.auth.id",
-        "update": "@request.auth.id != '' && user = @request.auth.id",
-        "delete": "@request.auth.id != '' && user = @request.auth.id"
+        "list": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "view": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "create": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "update": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "delete": "@request.auth.id != '' && usuario_id = @request.auth.id"
       },
       "fields": [
         {
-          "name": "user",
+          "name": "usuario_id",
           "type": "relation",
           "required": true,
           "system": false,
           "collectionRef": "users"
         },
         {
-          "name": "report",
-          "type": "file",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "date",
-          "type": "date",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "notes",
+          "name": "plano",
           "type": "text",
           "required": false,
-          "system": false
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate"]
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        }
-      ],
-      "indexes": []
-    },
-    {
-      "name": "evolution_photos",
-      "type": "base",
-      "apiRules": {
-        "list": "@request.auth.id != '' && user = @request.auth.id",
-        "view": "@request.auth.id != '' && user = @request.auth.id",
-        "create": "@request.auth.id != '' && user = @request.auth.id",
-        "update": "@request.auth.id != '' && user = @request.auth.id",
-        "delete": "@request.auth.id != '' && user = @request.auth.id"
-      },
-      "fields": [
-        {
-          "name": "user",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "users"
-        },
-        {
-          "name": "photo",
-          "type": "file",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "date",
-          "type": "date",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "angle",
-          "type": "select",
-          "required": true,
-          "system": false,
-          "selectValues": ["Frente", "Lado", "Costas"]
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate"]
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        }
-      ],
-      "indexes": []
-    },
-    {
-      "name": "physical_activity",
-      "type": "base",
-      "apiRules": {
-        "list": "@request.auth.id != '' && user = @request.auth.id",
-        "view": "@request.auth.id != '' && user = @request.auth.id",
-        "create": "@request.auth.id != '' && user = @request.auth.id",
-        "update": "@request.auth.id != '' && user = @request.auth.id",
-        "delete": "@request.auth.id != '' && user = @request.auth.id"
-      },
-      "fields": [
-        {
-          "name": "user",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "users"
-        },
-        {
-          "name": "date",
-          "type": "date",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "duration_minutes",
-          "type": "number",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "activity_type",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate"]
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        }
-      ],
-      "indexes": []
-    },
-    {
-      "name": "badges",
-      "type": "base",
-      "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
-        "create": null,
-        "update": null,
-        "delete": null
-      },
-      "fields": [
-        {
-          "name": "name",
-          "type": "text",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "description",
-          "type": "text",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "icon",
-          "type": "file",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "type",
-          "type": "select",
-          "required": true,
-          "system": false,
-          "selectValues": ["streak_days", "total_activities", "weekly_goals_met", "first_log"]
-        },
-        {
-          "name": "requirement_value",
-          "type": "number",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate"]
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        }
-      ],
-      "indexes": ["CREATE INDEX idx_badges_type ON badges (type)"]
-    },
-    {
-      "name": "user_badges",
-      "type": "base",
-      "apiRules": {
-        "list": "@request.auth.id != '' && user = @request.auth.id",
-        "view": "@request.auth.id != '' && user = @request.auth.id",
-        "create": "@request.auth.id != '' && user = @request.auth.id",
-        "update": "@request.auth.id != '' && user = @request.auth.id",
-        "delete": "@request.auth.id != '' && user = @request.auth.id"
-      },
-      "fields": [
-        {
-          "name": "user",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "users"
-        },
-        {
-          "name": "badge",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "badges"
-        },
-        {
-          "name": "earned_at",
-          "type": "date",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate"]
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        }
-      ],
-      "indexes": ["CREATE INDEX idx_user_badges_user ON user_badges (user)"]
-    },
-    {
-      "name": "appointments",
-      "type": "base",
-      "apiRules": {
-        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "delete": "@request.auth.role = 'admin'"
-      },
-      "fields": [
-        {
-          "name": "user",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "users"
-        },
-        {
-          "name": "title",
-          "type": "text",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "date",
-          "type": "date",
-          "required": true,
           "system": false
         },
         {
           "name": "status",
-          "type": "select",
+          "type": "text",
           "required": false,
-          "system": false,
-          "selectValues": ["agendado", "concluido", "cancelado"]
+          "system": false
         },
         {
-          "name": "notes",
+          "name": "data_inicio",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "data_renovacao",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "stripe_subscription_id",
           "type": "text",
           "required": false,
           "system": false
@@ -384,122 +102,63 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        },
-        {
-          "name": "subscription",
-          "type": "relation",
-          "required": false,
-          "system": false,
-          "collectionRef": "subscriptions"
-        },
-        {
-          "name": "type",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["presencial", "telemedicina"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE INDEX idx_assinaturas_usuario_id ON assinaturas (usuario_id)"
+      ]
     },
     {
-      "name": "videos",
+      "name": "slots_disponiveis",
       "type": "base",
       "apiRules": {
         "list": "@request.auth.id != ''",
         "view": "@request.auth.id != ''",
-        "create": null,
-        "update": null,
-        "delete": null
+        "create": "@request.auth.id != '' && medico_id = @request.auth.id",
+        "update": "@request.auth.id != '' && medico_id = @request.auth.id",
+        "delete": "@request.auth.id != '' && medico_id = @request.auth.id"
       },
       "fields": [
         {
-          "name": "title",
+          "name": "data",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "hora_inicio",
           "type": "text",
           "required": true,
           "system": false
         },
         {
-          "name": "description",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "thumbnail",
-          "type": "file",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "video_url",
+          "name": "hora_fim",
           "type": "text",
           "required": true,
           "system": false
         },
         {
-          "name": "category",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate"]
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        }
-      ],
-      "indexes": []
-    },
-    {
-      "name": "notifications",
-      "type": "base",
-      "apiRules": {
-        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "create": "@request.auth.id != '' && @request.auth.role = 'admin'",
-        "update": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "delete": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')"
-      },
-      "fields": [
-        {
-          "name": "user",
+          "name": "medico_id",
           "type": "relation",
           "required": true,
           "system": false,
           "collectionRef": "users"
         },
         {
-          "name": "title",
-          "type": "text",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "message",
-          "type": "text",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "is_read",
+          "name": "agendado",
           "type": "bool",
           "required": false,
           "system": false
@@ -509,90 +168,155 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
-          "name": "type",
+          "name": "tipo",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["email", "sms", "whatsapp"]
-        },
-        {
-          "name": "subject",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "status",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["enviado", "pendente", "falha"]
-        },
-        {
-          "name": "sent_at",
-          "type": "date",
-          "required": false,
-          "system": false
+          "selectValues": [
+            "presencial",
+            "telemedicina"
+          ]
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE INDEX idx_slots_data_agendado ON slots_disponiveis (data, agendado)"
+      ]
     },
     {
-      "name": "subscriptions",
+      "name": "agendamentos",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "create": "@request.auth.id != ''",
-        "update": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "delete": "@request.auth.role = 'admin'"
+        "list": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "view": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "create": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "update": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "delete": "@request.auth.id != '' && usuario_id = @request.auth.id"
       },
       "fields": [
         {
-          "name": "user",
+          "name": "usuario_id",
           "type": "relation",
           "required": true,
           "system": false,
           "collectionRef": "users"
         },
         {
-          "name": "plan",
-          "type": "select",
+          "name": "slot_id",
+          "type": "relation",
           "required": true,
           "system": false,
-          "selectValues": ["entry", "intermediate", "premium", "diamond"]
+          "collectionRef": "slots_disponiveis"
+        },
+        {
+          "name": "data_agendamento",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "hora_agendamento",
+          "type": "text",
+          "required": true,
+          "system": false
         },
         {
           "name": "status",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["active", "pending_payment", "canceled", "suspended"]
+          "selectValues": [
+            "confirmado",
+            "cancelado",
+            "realizado"
+          ]
         },
         {
-          "name": "start_date",
+          "name": "tipo_consulta",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "presencial",
+            "telemedicina"
+          ]
+        },
+        {
+          "name": "notas",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_agendamentos_usuario_status ON agendamentos (usuario_id, status)"
+      ]
+    },
+    {
+      "name": "historico_elegibilidade",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "view": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "create": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "update": "@request.auth.id != '' && usuario_id = @request.auth.id",
+        "delete": "@request.auth.id != '' && usuario_id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "ultima_consulta",
           "type": "date",
           "required": false,
           "system": false
         },
         {
-          "name": "renewal_date",
+          "name": "proxima_consulta_permitida",
           "type": "date",
           "required": false,
           "system": false
         },
         {
-          "name": "monthly_price",
+          "name": "consultas_realizadas_ano",
           "type": "number",
           "required": false,
           "system": false
@@ -602,79 +326,832 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_historico_usuario ON historico_elegibilidade (usuario_id)"
+      ]
+    },
+    {
+      "name": "categorias_conteudo",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.email = 'admin@canever.com.br'",
+        "update": "@request.auth.email = 'admin@canever.com.br'",
+        "delete": "@request.auth.email = 'admin@canever.com.br'"
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "icone",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": []
     },
     {
-      "name": "payments",
+      "name": "artigos",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'admin')",
-        "create": null,
+        "list": "@request.auth.id != '' && (publicado = true || @request.auth.email = 'admin@canever.com.br')",
+        "view": "@request.auth.id != '' && (publicado = true || @request.auth.email = 'admin@canever.com.br')",
+        "create": "@request.auth.email = 'admin@canever.com.br'",
+        "update": "@request.auth.email = 'admin@canever.com.br'",
+        "delete": "@request.auth.email = 'admin@canever.com.br'"
+      },
+      "fields": [
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "conteudo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "categoria_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "categorias_conteudo"
+        },
+        {
+          "name": "autor",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "imagem_url",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "publicado",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "data_publicacao",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "visualizacoes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_artigos_cat_pub ON artigos (categoria_id, publicado)",
+        "CREATE INDEX idx_artigos_created ON artigos (created)"
+      ]
+    },
+    {
+      "name": "videos",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (publicado = true || @request.auth.email = 'admin@canever.com.br')",
+        "view": "@request.auth.id != '' && (publicado = true || @request.auth.email = 'admin@canever.com.br')",
+        "create": "@request.auth.email = 'admin@canever.com.br'",
+        "update": "@request.auth.email = 'admin@canever.com.br'",
+        "delete": "@request.auth.email = 'admin@canever.com.br'"
+      },
+      "fields": [
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "url_youtube",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "categoria_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "categorias_conteudo"
+        },
+        {
+          "name": "autor",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "thumbnail_url",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "publicado",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "data_publicacao",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "visualizacoes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "duracao_minutos",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_videos_cat_pub ON videos (categoria_id, publicado)",
+        "CREATE INDEX idx_videos_created ON videos (created)"
+      ]
+    },
+    {
+      "name": "fotos_paciente",
+      "type": "base",
+      "apiRules": {
+        "list": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "view": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "create": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "update": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "delete": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'"
+      },
+      "fields": [
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "foto",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_fotos_usuario_date ON fotos_paciente (usuario_id, created)"
+      ]
+    },
+    {
+      "name": "exames_pdf",
+      "type": "base",
+      "apiRules": {
+        "list": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "view": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "create": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "update": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "delete": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'"
+      },
+      "fields": [
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "nome_exame",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "arquivo",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tamanho_bytes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "data_exame",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tipo_exame",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "sangue",
+            "imagem",
+            "outro"
+          ]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_exames_usuario_data ON exames_pdf (usuario_id, data_exame)"
+      ]
+    },
+    {
+      "name": "bioimpedancia_pdf",
+      "type": "base",
+      "apiRules": {
+        "list": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "view": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "create": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "update": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "delete": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'"
+      },
+      "fields": [
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "arquivo",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tamanho_bytes",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "data_medicao",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "massa_magra",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "percentual_gordura",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_bio_usuario_data ON bioimpedancia_pdf (usuario_id, data_medicao)"
+      ]
+    },
+    {
+      "name": "injetaveis",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.email = 'admin@canever.com.br'",
+        "update": "@request.auth.email = 'admin@canever.com.br'",
+        "delete": "@request.auth.email = 'admin@canever.com.br'"
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "funcionalidades",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "preco_ampola",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "preco_kit",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "quantidade_kit",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "imagem",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "pedidos_injetaveis",
+      "type": "base",
+      "apiRules": {
+        "list": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "view": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "create": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "update": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "delete": "usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'"
+      },
+      "fields": [
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "injetavel_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "injetaveis"
+        },
+        {
+          "name": "tipo_compra",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "ampola",
+            "kit"
+          ]
+        },
+        {
+          "name": "quantidade",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "preco_total",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "opcao_entrega",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "agendar_clinica",
+            "enviar_endereco"
+          ]
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "pendente_pagamento",
+            "pago",
+            "agendado",
+            "enviado",
+            "cancelado"
+          ]
+        },
+        {
+          "name": "data_agendamento",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "endereco_entrega",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "stripe_payment_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_pedidos_usuario_status ON pedidos_injetaveis (usuario_id, status)"
+      ]
+    },
+    {
+      "name": "catalogo_injetaveis",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.email = 'admin@canever.com.br'",
+        "update": "@request.auth.email = 'admin@canever.com.br'",
+        "delete": "@request.auth.email = 'admin@canever.com.br'"
+      },
+      "fields": [
+        {
+          "name": "produto",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "tipo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "funcao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "via_administracao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ponsologia_recomendada",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "valor",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ativo",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "conversas_suporte",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id = usuario_id || @request.auth.email = 'admin@canever.com.br'",
+        "view": "@request.auth.id = usuario_id || @request.auth.email = 'admin@canever.com.br'",
+        "create": "@request.auth.id != '' && @request.body.usuario_id = @request.auth.id",
+        "update": "@request.auth.id = usuario_id || @request.auth.email = 'admin@canever.com.br'",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "usuario_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "titulo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "ativa",
+            "encerrada"
+          ]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_conversas_suporte_usuario_status ON conversas_suporte (usuario_id, status)"
+      ]
+    },
+    {
+      "name": "mensagens_suporte",
+      "type": "base",
+      "apiRules": {
+        "list": "conversa_id.usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "view": "conversa_id.usuario_id = @request.auth.id || @request.auth.email = 'admin@canever.com.br'",
+        "create": "@request.auth.id != ''",
         "update": null,
         "delete": null
       },
       "fields": [
         {
-          "name": "user",
+          "name": "conversa_id",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "conversas_suporte"
+        },
+        {
+          "name": "usuario_id",
           "type": "relation",
           "required": true,
           "system": false,
           "collectionRef": "users"
         },
         {
-          "name": "subscription",
-          "type": "relation",
-          "required": true,
-          "system": false,
-          "collectionRef": "subscriptions"
-        },
-        {
-          "name": "amount",
-          "type": "number",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "status",
+          "name": "remetente",
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["pendente", "processando", "aprovado", "recusado", "reembolsado"]
+          "selectValues": [
+            "paciente",
+            "agente_ia"
+          ]
         },
         {
-          "name": "method",
-          "type": "select",
-          "required": true,
-          "system": false,
-          "selectValues": ["cartao_credito", "pix", "boleto"]
-        },
-        {
-          "name": "gateway_id",
+          "name": "conteudo",
           "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "payment_date",
-          "type": "date",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "next_renewal",
-          "type": "date",
-          "required": false,
+          "required": true,
           "system": false
         },
         {
@@ -682,73 +1159,24 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
-        "CREATE INDEX idx_payments_user ON payments (user)",
-        "CREATE INDEX idx_payments_subscription ON payments (subscription)",
-        "CREATE INDEX idx_payments_status ON payments (status)"
+        "CREATE INDEX idx_mensagens_suporte_conversa_created ON mensagens_suporte (conversa_id, created)"
       ]
-    },
-    {
-      "name": "settings",
-      "type": "base",
-      "apiRules": {
-        "list": "@request.auth.id != ''",
-        "view": "@request.auth.id != ''",
-        "create": "@request.auth.role = 'admin'",
-        "update": "@request.auth.role = 'admin'",
-        "delete": "@request.auth.role = 'admin'"
-      },
-      "fields": [
-        {
-          "name": "max_daily_presencial",
-          "type": "number",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "max_daily_telemedicina",
-          "type": "number",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "created",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate"]
-        },
-        {
-          "name": "updated",
-          "type": "autodate",
-          "required": false,
-          "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        },
-        {
-          "name": "start_time",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "end_time",
-          "type": "text",
-          "required": false,
-          "system": false
-        }
-      ],
-      "indexes": []
     }
   ]
 }
