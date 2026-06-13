@@ -24,6 +24,27 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import pb from '@/lib/pocketbase/client'
 
+function fmtCpf(cpf?: string) {
+  const d = (cpf || '').replace(/\D/g, '')
+  if (d.length !== 11) return cpf || ''
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
+}
+
+// Nome do paciente vinculado, ou indicação de exame pendente (só com CPF).
+function PacienteCell({ item }: { item: any }) {
+  const nome = item.expand?.usuario_id?.name || item.expand?.usuario_id?.email
+  if (nome) return <span>{nome}</span>
+  if (item.cpf) {
+    return (
+      <span className="flex flex-col">
+        <span>CPF {fmtCpf(item.cpf)}</span>
+        <span className="text-xs font-medium text-amber-600">Pendente — aguardando cadastro</span>
+      </span>
+    )
+  }
+  return <span>N/A</span>
+}
+
 function formatBytes(bytes: number, decimals = 2) {
   if (!+bytes) return '0 Bytes'
   const k = 1024
@@ -46,10 +67,17 @@ export function BioimpedanciaList({ refreshTrigger }: { refreshTrigger: number }
   const fetchItems = useCallback(async () => {
     setLoading(true)
     try {
+      let filter = ''
+      if (search) {
+        const digits = search.replace(/\D/g, '')
+        const parts = [`usuario_id.name ~ "${search}"`, `usuario_id.email ~ "${search}"`]
+        if (digits) parts.push(`cpf ~ "${digits}"`)
+        filter = parts.join(' || ')
+      }
       const result = await pb.collection('bioimpedancia_pdf').getList(page, 20, {
         sort: '-data_medicao',
         expand: 'usuario_id',
-        filter: search ? `usuario_id.name ~ "${search}" || usuario_id.email ~ "${search}"` : '',
+        filter,
       })
       setItems(result.items)
       setTotalPages(result.totalPages || 1)
@@ -146,7 +174,7 @@ export function BioimpedanciaList({ refreshTrigger }: { refreshTrigger: number }
                   {items.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">
-                        {item.expand?.usuario_id?.name || item.expand?.usuario_id?.email || 'N/A'}
+                        <PacienteCell item={item} />
                       </TableCell>
                       <TableCell>{format(new Date(item.data_medicao), 'dd/MM/yyyy')}</TableCell>
                       <TableCell>{item.massa_magra ? `${item.massa_magra} kg` : '-'}</TableCell>
@@ -199,7 +227,7 @@ export function BioimpedanciaList({ refreshTrigger }: { refreshTrigger: number }
                 >
                   <div className="flex justify-between items-start">
                     <div className="font-medium truncate">
-                      {item.expand?.usuario_id?.name || item.expand?.usuario_id?.email || 'N/A'}
+                      <PacienteCell item={item} />
                     </div>
                     <div className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                       {format(new Date(item.data_medicao), 'dd/MM/yyyy')}

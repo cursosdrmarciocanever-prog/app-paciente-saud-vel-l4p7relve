@@ -18,15 +18,25 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { Progress } from '@/components/ui/progress'
-import { PatientAutocomplete } from './PatientAutocomplete'
 import { useToast } from '@/hooks/use-toast'
 import pb from '@/lib/pocketbase/client'
 import { cn } from '@/lib/utils'
 
 const MAX_FILE_SIZE = 500 * 1024 * 1024 // 500MB
 
+// Formata o CPF como 000.000.000-00 enquanto digita (aceita só dígitos)
+function maskCpf(value: string): string {
+  const d = value.replace(/\D/g, '').slice(0, 11)
+  return d
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
+}
+
 const formSchema = z.object({
-  usuario_id: z.string().min(1, 'Selecione um paciente'),
+  cpf: z
+    .string()
+    .refine((v) => v.replace(/\D/g, '').length === 11, 'Informe um CPF válido (11 dígitos)'),
   data_medicao: z.date({ required_error: 'Selecione a data da medição' }),
   massa_magra: z.string().optional(),
   percentual_gordura: z.string().optional(),
@@ -46,7 +56,7 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      usuario_id: '',
+      cpf: '',
       massa_magra: '',
       percentual_gordura: '',
       data_medicao: new Date(),
@@ -58,7 +68,7 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
     setUploadProgress(0)
     try {
       const formData = new FormData()
-      formData.append('usuario_id', values.usuario_id)
+      formData.append('cpf', values.cpf.replace(/\D/g, ''))
       formData.append('data_medicao', values.data_medicao.toISOString())
       if (values.massa_magra && !isNaN(Number(values.massa_magra))) {
         formData.append('massa_magra', Number(values.massa_magra).toString())
@@ -114,14 +124,22 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
             control={form.control}
-            name="usuario_id"
+            name="cpf"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Paciente *</FormLabel>
-                <PatientAutocomplete
-                  value={field.value}
-                  onChange={(val) => form.setValue('usuario_id', val, { shouldValidate: true })}
-                />
+                <FormLabel>CPF do Paciente *</FormLabel>
+                <FormControl>
+                  <Input
+                    inputMode="numeric"
+                    placeholder="000.000.000-00"
+                    {...field}
+                    onChange={(e) => field.onChange(maskCpf(e.target.value))}
+                  />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Vincula automaticamente ao paciente com este CPF. Se ele ainda não tiver conta, o
+                  exame fica arquivado e é vinculado quando ele se cadastrar com este CPF.
+                </p>
                 <FormMessage />
               </FormItem>
             )}

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Mail, Lock, User, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Mail, Lock, User, Eye, EyeOff, Loader2, Fingerprint } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,9 +19,21 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import { extractFieldErrors } from '@/lib/pocketbase/errors'
 
+// Formata o CPF como 000.000.000-00 enquanto digita
+function maskCpf(value: string): string {
+  const d = value.replace(/\D/g, '').slice(0, 11)
+  return d
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
+}
+
 const signupSchema = z
   .object({
     name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
+    cpf: z
+      .string()
+      .refine((v) => v.replace(/\D/g, '').length === 11, 'Informe um CPF válido (11 dígitos)'),
     email: z.string().email('Email inválido'),
     password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
     confirmPassword: z.string(),
@@ -49,6 +61,7 @@ export function SignupForm({ onSwitch }: SignupFormProps) {
     resolver: zodResolver(signupSchema),
     defaultValues: {
       name: '',
+      cpf: '',
       email: '',
       password: '',
       confirmPassword: '',
@@ -60,6 +73,7 @@ export function SignupForm({ onSwitch }: SignupFormProps) {
 
     const { error } = await signUp({
       name: data.name,
+      cpf: data.cpf.replace(/\D/g, ''),
       email: data.email,
       password: data.password,
       passwordConfirm: data.confirmPassword,
@@ -104,6 +118,28 @@ export function SignupForm({ onSwitch }: SignupFormProps) {
                     placeholder="Seu nome"
                     className="pl-9 focus-visible:ring-primary"
                     {...field}
+                  />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="cpf"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>CPF</FormLabel>
+              <FormControl>
+                <div className="relative">
+                  <Fingerprint className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    inputMode="numeric"
+                    placeholder="000.000.000-00"
+                    className="pl-9 focus-visible:ring-primary"
+                    {...field}
+                    onChange={(e) => field.onChange(maskCpf(e.target.value))}
                   />
                 </div>
               </FormControl>

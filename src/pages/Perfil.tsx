@@ -3,8 +3,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Mail, LogOut, Shield } from 'lucide-react'
+import { User, Mail, LogOut, Shield, Fingerprint } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+
+function fmtCpf(cpf?: string) {
+  const d = (cpf || '').replace(/\D/g, '')
+  if (d.length !== 11) return cpf || ''
+  return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
+}
 
 export default function Perfil() {
   const { user, signOut } = useAuth()
@@ -72,11 +78,23 @@ export default function Perfil() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="cpf">CPF</Label>
+                <div className="relative">
+                  <Fingerprint className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="cpf"
+                    value={fmtCpf((user as { cpf?: string })?.cpf) || 'Não informado'}
+                    readOnly
+                    className="pl-9 bg-slate-50"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="mt-6 pt-6 border-t border-slate-100">
               <p className="text-sm text-slate-500 mb-4">
-                Para alterar seu nome ou e-mail, entre em contato com o suporte.
+                Para alterar seu nome, e-mail ou CPF, entre em contato com o suporte.
               </p>
               <Button
                 onClick={handleLogout}
