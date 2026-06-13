@@ -1,0 +1,141 @@
+{
+  "name": "Bioimpedância WhatsApp (Evolution) → App Canever",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "bioimpedancia-whatsapp",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-220, 300],
+      "webhookId": "bioimpedancia-whatsapp"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "evolutionUrl", "value": "https://evolution.seudominio.com", "type": "string" },
+            { "id": "a2", "name": "instance", "value": "clinica", "type": "string" },
+            { "id": "a3", "name": "evolutionApiKey", "value": "SUA_APIKEY", "type": "string" },
+            { "id": "a4", "name": "appToken", "value": "COLE_AQUI_O_BIOIMPEDANCIA_INTAKE_TOKEN", "type": "string" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-config",
+      "name": "Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [0, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "typeValidation": "loose" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $('Webhook').item.json.body.data.message.documentMessage.mimetype }}",
+              "rightValue": "pdf",
+              "operator": { "type": "string", "operation": "contains" }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-if",
+      "name": "É PDF?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $('Webhook').first().json.body.data;\nconst doc = (data.message && data.message.documentMessage) || {};\nconst legenda = doc.caption || '';\nconst digits = (legenda.match(/\\d/g) || []).join('');\nconst cpf = digits.slice(0, 11);\nlet dataMedicao = new Date().toISOString().slice(0, 10);\nconst m = legenda.match(/(\\d{2})\\/(\\d{2})\\/(\\d{4})/);\nif (m) { dataMedicao = m[3] + '-' + m[2] + '-' + m[1]; }\nreturn [{ json: {\n  cpf,\n  dataMedicao,\n  fileName: doc.fileName || 'bioimpedancia.pdf',\n  remoteJid: data.key.remoteJid,\n  evoMessage: data,\n  cpfValido: cpf.length === 11\n} }];"
+      },
+      "id": "node-code",
+      "name": "Extrai CPF/Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').item.json.evolutionUrl }}/chat/getBase64FromMediaMessage/{{ $('Config').item.json.instance }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $('Config').item.json.evolutionApiKey }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: $('Extrai CPF/Data').item.json.evoMessage, convertToMp4: false }) }}",
+        "options": {}
+      },
+      "id": "node-getbase64",
+      "name": "Evolution: getBase64",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://app.clinicacanever.com.br/backend/v1/bioimpedancia/anexar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "X-Intake-Token", "value": "={{ $('Config').item.json.appToken }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ cpf: $('Extrai CPF/Data').item.json.cpf, data_medicao: $('Extrai CPF/Data').item.json.dataMedicao, arquivo_base64: $json.base64, nome_arquivo: $('Extrai CPF/Data').item.json.fileName }) }}",
+        "options": {}
+      },
+      "id": "node-anexar",
+      "name": "App: anexar bioimpedância",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [880, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Config').item.json.evolutionUrl }}/message/sendText/{{ $('Config').item.json.instance }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $('Config').item.json.evolutionApiKey }}" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Extrai CPF/Data').item.json.remoteJid, text: ($json.pendente ? '✅ Bioimpedância arquivada (pendente — será vinculada quando o paciente se cadastrar com este CPF).' : '✅ Bioimpedância vinculada ao paciente com sucesso.') }) }}",
+        "options": {}
+      },
+      "id": "node-reply",
+      "name": "WhatsApp: responder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Config", "type": "main", "index": 0 }]] },
+    "Config": { "main": [[{ "node": "É PDF?", "type": "main", "index": 0 }]] },
+    "É PDF?": { "main": [[{ "node": "Extrai CPF/Data", "type": "main", "index": 0 }]] },
+    "Extrai CPF/Data": { "main": [[{ "node": "Evolution: getBase64", "type": "main", "index": 0 }]] },
+    "Evolution: getBase64": { "main": [[{ "node": "App: anexar bioimpedância", "type": "main", "index": 0 }]] },
+    "App: anexar bioimpedância": { "main": [[{ "node": "WhatsApp: responder", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

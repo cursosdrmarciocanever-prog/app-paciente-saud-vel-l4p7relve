@@ -28,10 +28,40 @@ routerAdd('POST', '/backend/v1/bioimpedancia/anexar', (e) => {
   const cpf = String(body.cpf || '').replace(/\D/g, '')
   const dataMedicao = String(body.data_medicao || '')
   const arquivoUrl = String(body.arquivo_url || '')
+  const arquivoB64 = String(body.arquivo_base64 || '')
+  const nomeArquivo = String(body.nome_arquivo || 'bioimpedancia.pdf')
 
   if (cpf.length !== 11) return e.json(400, { error: 'CPF inválido (11 dígitos).' })
   if (!dataMedicao) return e.json(400, { error: 'data_medicao é obrigatória.' })
-  if (!arquivoUrl) return e.json(400, { error: 'arquivo_url é obrigatória.' })
+  if (!arquivoUrl && !arquivoB64) {
+    return e.json(400, { error: 'Envie arquivo_url ou arquivo_base64.' })
+  }
+
+  // Decodifica base64 -> bytes (sem atob/Buffer no JSVM; implementação manual).
+  const b64ToBytes = (b64) => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    const lookup = {}
+    for (let i = 0; i < chars.length; i++) lookup[chars.charAt(i)] = i
+    const clean = b64.replace(/[^A-Za-z0-9+/]/g, '')
+    const out = []
+    for (let i = 0; i < clean.length; i += 4) {
+      let e1 = lookup[clean.charAt(i)]
+      let e2 = lookup[clean.charAt(i + 1)]
+      let e3 = lookup[clean.charAt(i + 2)]
+      let e4 = lookup[clean.charAt(i + 3)]
+      if (e1 === undefined) e1 = 0
+      if (e2 === undefined) e2 = 0
+      const has3 = clean.charAt(i + 2) !== ''
+      const has4 = clean.charAt(i + 3) !== ''
+      if (e3 === undefined) e3 = 0
+      if (e4 === undefined) e4 = 0
+      const n = (e1 << 18) | (e2 << 12) | (e3 << 6) | e4
+      out.push((n >> 16) & 0xff)
+      if (has3) out.push((n >> 8) & 0xff)
+      if (has4) out.push(n & 0xff)
+    }
+    return Uint8Array.from(out)
+  }
 
   try {
     const col = $app.findCollectionByNameOrId('bioimpedancia_pdf')
@@ -39,8 +69,15 @@ routerAdd('POST', '/backend/v1/bioimpedancia/anexar', (e) => {
     record.set('cpf', cpf)
     record.set('data_medicao', dataMedicao)
 
-    const file = $filesystem.fileFromURL(arquivoUrl)
-    if (body.nome_arquivo) file.originalName = String(body.nome_arquivo)
+    let file
+    if (arquivoB64) {
+      // remove prefixo data: se vier (ex.: "data:application/pdf;base64,....")
+      const pure = arquivoB64.indexOf(',') >= 0 ? arquivoB64.split(',')[1] : arquivoB64
+      file = $filesystem.fileFromBytes(b64ToBytes(pure), nomeArquivo)
+    } else {
+      file = $filesystem.fileFromURL(arquivoUrl)
+      file.originalName = nomeArquivo
+    }
     record.set('arquivo', file)
 
     $app.save(record) // dispara o hook de vínculo por CPF
