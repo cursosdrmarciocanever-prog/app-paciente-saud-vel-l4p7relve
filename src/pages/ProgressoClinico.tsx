@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -26,6 +26,10 @@ import {
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { BioimpedanciaEvolucao } from '@/components/evolution/BioimpedanciaEvolucao'
+import {
+  ComparadorAntesDepois,
+  type ItemComparacao,
+} from '@/components/evolution/ComparadorAntesDepois'
 import {
   getFotos,
   createFoto,
@@ -229,6 +233,34 @@ export default function ProgressoClinico() {
     }
   }
 
+  // Itens para o comparador "Antes e Depois" (ordenados do mais antigo p/ o mais recente)
+  const biosItens: ItemComparacao[] = useMemo(
+    () =>
+      [...bioimpedancias]
+        .sort((a, b) => new Date(a.data_medicao).getTime() - new Date(b.data_medicao).getTime())
+        .map((b) => ({
+          id: b.id,
+          titulo: `Laudo de ${new Date(b.data_medicao).toLocaleDateString('pt-BR')}`,
+          url: getFileUrl('bioimpedancia_pdf', b.id, b.arquivo),
+          isPdf: isPdf(b.arquivo),
+        })),
+    [bioimpedancias],
+  )
+
+  const fotosItens: ItemComparacao[] = useMemo(
+    () =>
+      [...fotos]
+        .sort((a, b) => new Date(a.created).getTime() - new Date(b.created).getTime())
+        .map((f) => ({
+          id: f.id,
+          titulo:
+            f.descricao || `Foto de ${new Date(f.created).toLocaleDateString('pt-BR')}`,
+          url: getFileUrl('fotos_paciente', f.id, f.foto),
+          isPdf: isPdf(f.foto),
+        })),
+    [fotos],
+  )
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -260,6 +292,12 @@ export default function ProgressoClinico() {
         </TabsList>
 
         <TabsContent value="fotos" className="space-y-6 mt-6">
+          <Tabs defaultValue="fotos-lista">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="fotos-lista">Fotos</TabsTrigger>
+              <TabsTrigger value="fotos-comparar">Antes e Depois</TabsTrigger>
+            </TabsList>
+            <TabsContent value="fotos-lista" className="space-y-6 mt-4">
           <Card>
             <CardHeader>
               <CardTitle>Adicionar Foto</CardTitle>
@@ -338,6 +376,11 @@ export default function ProgressoClinico() {
               <p className="text-muted-foreground col-span-full">Nenhuma foto enviada ainda.</p>
             )}
           </div>
+            </TabsContent>
+            <TabsContent value="fotos-comparar" className="mt-4">
+              <ComparadorAntesDepois itens={fotosItens} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="exames" className="space-y-6 mt-6">
@@ -443,6 +486,12 @@ export default function ProgressoClinico() {
         </TabsContent>
 
         <TabsContent value="bioimpedancia" className="space-y-6 mt-6">
+          <Tabs defaultValue="bio-lista">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="bio-lista">Laudos</TabsTrigger>
+              <TabsTrigger value="bio-comparar">Antes e Depois</TabsTrigger>
+            </TabsList>
+            <TabsContent value="bio-lista" className="space-y-6 mt-4">
           <Card>
             <CardHeader>
               <CardTitle>Registro de Bioimpedância</CardTitle>
@@ -581,6 +630,11 @@ export default function ProgressoClinico() {
               <p className="text-muted-foreground">Nenhum laudo enviado ainda.</p>
             )}
           </div>
+            </TabsContent>
+            <TabsContent value="bio-comparar" className="mt-4">
+              <ComparadorAntesDepois itens={biosItens} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
 
