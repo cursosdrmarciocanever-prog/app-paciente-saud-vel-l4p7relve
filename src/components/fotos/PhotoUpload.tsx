@@ -21,8 +21,11 @@ interface PhotoUploadProps {
 const uploadSchema = z.object({
   file: z
     .custom<File>((v) => v instanceof File, 'Por favor, selecione um arquivo válido')
-    .refine((f) => ['image/jpeg', 'image/png'].includes(f.type), 'Apenas JPG ou PNG são permitidos')
-    .refine((f) => f.size <= 5 * 1024 * 1024, 'Arquivo muito grande, máx 5MB'),
+    .refine(
+      (f) => ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(f.type),
+      'Apenas imagens (JPG, PNG, WEBP) ou PDF são permitidos',
+    )
+    .refine((f) => f.size <= 50 * 1024 * 1024, 'Arquivo muito grande, máx 50MB'),
 })
 
 export function PhotoUpload({ currentCount, maxPhotos, onSuccess }: PhotoUploadProps) {
@@ -143,7 +146,7 @@ export function PhotoUpload({ currentCount, maxPhotos, onSuccess }: PhotoUploadP
             type="file"
             ref={fileInputRef}
             className="hidden"
-            accept="image/jpeg,image/png"
+            accept="image/jpeg,image/png,image/webp,application/pdf,.pdf"
             onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
           />
           <div className="flex flex-col items-center justify-center space-y-4">
@@ -154,7 +157,7 @@ export function PhotoUpload({ currentCount, maxPhotos, onSuccess }: PhotoUploadP
               <p className="text-sm font-medium text-[#4A4A4A]">
                 Arraste fotos aqui ou clique para selecionar
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Apenas JPG ou PNG. Máx. 5MB.</p>
+              <p className="text-xs text-muted-foreground mt-1">Imagens ou PDF. Máx. 50MB.</p>
             </div>
           </div>
         </div>

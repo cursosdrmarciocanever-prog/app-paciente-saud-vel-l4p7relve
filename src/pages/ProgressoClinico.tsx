@@ -119,13 +119,13 @@ export default function ProgressoClinico() {
     if (!file || file.size === 0)
       return toast({
         title: 'Atenção',
-        description: 'Selecione uma imagem.',
+        description: 'Selecione uma imagem ou PDF.',
         variant: 'destructive',
       })
-    if (file.size > 5 * 1024 * 1024)
+    if (file.size > 50 * 1024 * 1024)
       return toast({
         title: 'Atenção',
-        description: 'A foto deve ter no máximo 5MB.',
+        description: 'O arquivo deve ter no máximo 50MB.',
         variant: 'destructive',
       })
 
@@ -269,8 +269,14 @@ export default function ProgressoClinico() {
               <form onSubmit={handleFotoUpload} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="foto">Imagem (Max 5MB)</Label>
-                    <Input id="foto" name="foto" type="file" accept="image/*" required />
+                    <Label htmlFor="foto">Imagem ou PDF (Máx. 50MB)</Label>
+                    <Input
+                      id="foto"
+                      name="foto"
+                      type="file"
+                      accept="image/*,application/pdf,.pdf"
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="descricao">Descrição ou Data (Opcional)</Label>
@@ -285,30 +291,49 @@ export default function ProgressoClinico() {
           </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {fotos.map((foto) => (
-              <Card key={foto.id} className="overflow-hidden group">
-                <div className="aspect-square relative overflow-hidden bg-muted">
-                  <img
-                    src={getFileUrl('fotos_paciente', foto.id, foto.foto)}
-                    alt={foto.descricao}
-                    className="object-cover w-full h-full transition-transform group-hover:scale-105"
-                  />
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleDelete('foto', foto.id)}
+            {fotos.map((foto) => {
+              const url = getFileUrl('fotos_paciente', foto.id, foto.foto)
+              const ehPdf = isPdf(foto.foto)
+              return (
+                <Card key={foto.id} className="overflow-hidden group">
+                  <button
+                    type="button"
+                    className="aspect-square relative overflow-hidden bg-muted w-full block"
+                    onClick={() =>
+                      setViewer({ url, titulo: foto.descricao || 'Foto', isPdf: ehPdf })
+                    }
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-                {foto.descricao && (
-                  <div className="p-3 bg-card border-t border-border">
-                    <p className="text-sm font-medium">{foto.descricao}</p>
+                    {ehPdf ? (
+                      <div className="flex flex-col items-center justify-center w-full h-full gap-2 text-muted-foreground">
+                        <FileText className="w-12 h-12 text-primary" />
+                        <span className="text-xs font-medium">PDF — clique para ver</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={url}
+                        alt={foto.descricao}
+                        className="object-cover w-full h-full transition-transform group-hover:scale-105"
+                      />
+                    )}
+                  </button>
+                  <div className="relative">
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute -top-10 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleDelete('foto', foto.id)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
-                )}
-              </Card>
-            ))}
+                  {foto.descricao && (
+                    <div className="p-3 bg-card border-t border-border">
+                      <p className="text-sm font-medium">{foto.descricao}</p>
+                    </div>
+                  )}
+                </Card>
+              )
+            })}
             {fotos.length === 0 && (
               <p className="text-muted-foreground col-span-full">Nenhuma foto enviada ainda.</p>
             )}

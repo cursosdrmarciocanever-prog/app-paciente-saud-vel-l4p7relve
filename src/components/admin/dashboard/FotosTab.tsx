@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Search, Download, Trash2, Eye, Loader2 } from 'lucide-react'
+import { Search, Download, Trash2, Eye, Loader2, FileText } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
@@ -183,11 +183,23 @@ export function FotosTab() {
                 key={f.id}
                 className="relative group rounded-lg overflow-hidden border shadow-sm"
               >
-                <img
-                  src={pb.files.getUrl(f, f.foto)}
-                  alt={f.descricao}
-                  className="w-full h-40 object-cover"
-                />
+                {/\.pdf$/i.test(f.foto) ? (
+                  <a
+                    href={pb.files.getUrl(f, f.foto)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full h-40 flex flex-col items-center justify-center gap-1 bg-muted text-primary"
+                  >
+                    <FileText className="h-10 w-10" />
+                    <span className="text-xs font-medium text-foreground">Abrir PDF</span>
+                  </a>
+                ) : (
+                  <img
+                    src={pb.files.getUrl(f, f.foto)}
+                    alt={f.descricao}
+                    className="w-full h-40 object-cover"
+                  />
+                )}
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                   <Button
                     size="icon"

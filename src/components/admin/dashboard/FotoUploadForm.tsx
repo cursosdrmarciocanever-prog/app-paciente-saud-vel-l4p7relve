@@ -17,7 +17,8 @@ import { useToast } from '@/hooks/use-toast'
 import pb from '@/lib/pocketbase/client'
 import { cn } from '@/lib/utils'
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
+const aceitaArquivo = (f: File) => f.type.startsWith('image/') || f.type === 'application/pdf'
 
 function maskCpf(value: string): string {
   const d = value.replace(/\D/g, '').slice(0, 11)
@@ -40,9 +41,9 @@ const schema = z.object({
   descricao: z.string().optional(),
   foto: z
     .any()
-    .refine((f) => f instanceof File, 'Selecione uma imagem')
-    .refine((f) => f?.size <= MAX_FILE_SIZE, 'Imagem muito grande, máx 5MB')
-    .refine((f) => f?.type?.startsWith('image/'), 'Apenas imagens são aceitas'),
+    .refine((f) => f instanceof File, 'Selecione um arquivo')
+    .refine((f) => f?.size <= MAX_FILE_SIZE, 'Arquivo muito grande, máx 50MB')
+    .refine((f) => f && aceitaArquivo(f), 'Apenas imagens ou PDF são aceitos'),
 })
 
 export function FotoUploadForm({ onSuccess }: { onSuccess: () => void }) {
@@ -129,7 +130,7 @@ export function FotoUploadForm({ onSuccess }: { onSuccess: () => void }) {
             name="foto"
             render={({ field }) => (
               <FormItem className="md:col-span-1">
-                <FormLabel>Imagem (máx. 5MB) *</FormLabel>
+                <FormLabel>Imagem ou PDF (máx. 50MB) *</FormLabel>
                 <FormControl>
                   <div
                     className={cn(
@@ -156,7 +157,7 @@ export function FotoUploadForm({ onSuccess }: { onSuccess: () => void }) {
                     </p>
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,application/pdf,.pdf"
                       className="hidden"
                       ref={fileInputRef}
                       onChange={(e) => {
