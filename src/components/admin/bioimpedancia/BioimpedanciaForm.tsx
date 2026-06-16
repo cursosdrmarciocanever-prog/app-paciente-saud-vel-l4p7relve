@@ -33,6 +33,14 @@ function maskCpf(value: string): string {
     .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
 }
 
+// Tenta extrair um CPF (11 dígitos consecutivos) do nome do arquivo.
+// Ex.: "bioimpedancia_12345678900.pdf" -> "12345678900". Retorna '' se não achar.
+function cpfFromFilename(name: string): string {
+  const semExt = name.replace(/\.[^.]+$/, '')
+  const m = semExt.replace(/[.\-\s]/g, '').match(/\d{11}/)
+  return m ? m[0] : ''
+}
+
 const formSchema = z.object({
   cpf: z
     .string()
@@ -97,7 +105,16 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
       })
 
       toast({ title: 'Sucesso', description: 'Exame de bioimpedância salvo com sucesso.' })
-      form.reset()
+      // "Salvar e enviar o próximo": mantém a data, limpa CPF, métricas e arquivo
+      const dataAtual = form.getValues('data_medicao')
+      form.reset({
+        cpf: '',
+        massa_magra: '',
+        percentual_gordura: '',
+        data_medicao: dataAtual,
+        arquivo: undefined as unknown as File,
+      })
+      setCpfAutoDetectado(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
       onSuccess()
     } catch (error: any) {
@@ -112,9 +129,24 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
     }
   }
 
+  const [cpfAutoDetectado, setCpfAutoDetectado] = useState(false)
+
+  // Define o arquivo e, se o CPF ainda estiver vazio, tenta preenchê-lo pelo nome do arquivo.
+  const aplicarArquivo = (file: File) => {
+    form.setValue('arquivo', file, { shouldValidate: true })
+    const atual = (form.getValues('cpf') || '').replace(/\D/g, '')
+    if (atual.length !== 11) {
+      const detectado = cpfFromFilename(file.name)
+      if (detectado) {
+        form.setValue('cpf', maskCpf(detectado), { shouldValidate: true })
+        setCpfAutoDetectado(true)
+      }
+    }
+  }
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) form.setValue('arquivo', file, { shouldValidate: true })
+    if (file) aplicarArquivo(file)
   }
 
   return (
@@ -133,9 +165,17 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
                     inputMode="numeric"
                     placeholder="000.000.000-00"
                     {...field}
-                    onChange={(e) => field.onChange(maskCpf(e.target.value))}
+                    onChange={(e) => {
+                      setCpfAutoDetectado(false)
+                      field.onChange(maskCpf(e.target.value))
+                    }}
                   />
                 </FormControl>
+                {cpfAutoDetectado && (
+                  <p className="text-xs font-medium text-green-600">
+                    CPF detectado pelo nome do arquivo — confira antes de salvar.
+                  </p>
+                )}
                 <p className="text-xs text-muted-foreground">
                   Vincula automaticamente ao paciente com este CPF. Se ele ainda não tiver conta, o
                   exame fica arquivado e é vinculado quando ele se cadastrar com este CPF.
@@ -230,7 +270,7 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
                     onDrop={(e) => {
                       e.preventDefault()
                       const file = e.dataTransfer.files?.[0]
-                      if (file) form.setValue('arquivo', file, { shouldValidate: true })
+                      if (file) aplicarArquivo(file)
                     }}
                   >
                     {field.value ? (
