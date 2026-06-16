@@ -37,3 +37,8 @@ screenshot.png
 
 # Runtime local do PocketBase (não versionar)
 pb_runtime/
+
+# Capacitor (gerado)
+ios/
+android/
+.capacitor/

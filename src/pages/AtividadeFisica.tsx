@@ -29,7 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Activity, Plus, Trash2, Clock, Flame } from 'lucide-react'
+import { Activity, Plus, Trash2, Clock, Flame, Watch, Loader2 } from 'lucide-react'
+import { healthDisponivel, sincronizarAppleWatch } from '@/services/appleHealth'
 
 const hoje = () => new Date().toISOString().slice(0, 10)
 
@@ -69,6 +70,38 @@ export default function AtividadeFisica() {
   }, [user])
 
   useRealtime('atividades_fisicas', () => fetch())
+
+  // Apple Watch (só no app nativo iOS)
+  const [watchDisponivel, setWatchDisponivel] = useState(false)
+  const [sincronizando, setSincronizando] = useState(false)
+
+  useEffect(() => {
+    healthDisponivel().then(setWatchDisponivel)
+  }, [])
+
+  const handleSincronizarWatch = async () => {
+    if (!user) return
+    setSincronizando(true)
+    try {
+      const r = await sincronizarAppleWatch(user.id)
+      toast({
+        title: 'Apple Watch sincronizado',
+        description:
+          r.importados > 0
+            ? `${r.importados} novo(s) treino(s) importado(s).`
+            : 'Nenhum treino novo para importar.',
+      })
+      fetch()
+    } catch (_) {
+      toast({
+        title: 'Erro ao sincronizar',
+        description: 'Verifique as permissões de Saúde no iPhone e tente novamente.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSincronizando(false)
+    }
+  }
 
   const resumo = useMemo(() => {
     const totalMin = atividades.reduce((s, a) => s + (a.duracao_minutos || 0), 0)
@@ -200,6 +233,30 @@ export default function AtividadeFisica() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {watchDisponivel && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-4">
+            <div className="flex items-center gap-3">
+              <Watch className="h-6 w-6 text-primary shrink-0" />
+              <div>
+                <p className="font-semibold">Apple Watch</p>
+                <p className="text-sm text-muted-foreground">
+                  Importe seus treinos do Apple Watch automaticamente.
+                </p>
+              </div>
+            </div>
+            <Button onClick={handleSincronizarWatch} disabled={sincronizando}>
+              {sincronizando ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Watch className="mr-2 h-4 w-4" />
+              )}
+              {sincronizando ? 'Sincronizando...' : 'Sincronizar Apple Watch'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
