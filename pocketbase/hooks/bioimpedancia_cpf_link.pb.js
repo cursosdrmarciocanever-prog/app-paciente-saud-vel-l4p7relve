@@ -24,6 +24,22 @@ onRecordCreate((e) => {
   e.next()
 }, 'bioimpedancia_pdf')
 
+// (1b) Mesmo gatilho para as FOTOS do paciente
+onRecordCreate((e) => {
+  const cpf = (e.record.getString('cpf') || '').replace(/\D/g, '')
+  if (cpf) e.record.set('cpf', cpf)
+
+  if (cpf && !e.record.getString('usuario_id')) {
+    try {
+      const paciente = $app.findFirstRecordByFilter('users', 'cpf = {:cpf}', { cpf })
+      e.record.set('usuario_id', paciente.id)
+    } catch (_) {
+      // nenhum paciente com esse CPF ainda -> fica pendente
+    }
+  }
+  e.next()
+}, 'fotos_paciente')
+
 // Normaliza o CPF do usuário antes de salvar (criação e atualização)
 onRecordCreate((e) => {
   const cpf = (e.record.getString('cpf') || '').replace(/\D/g, '')
@@ -42,26 +58,27 @@ const vincularPendentes = (e) => {
   try {
     const cpf = (e.record.getString('cpf') || '').replace(/\D/g, '')
     if (cpf) {
-      const pendentes = $app.findRecordsByFilter(
-        'bioimpedancia_pdf',
-        "cpf = {:cpf} && usuario_id = ''",
-        '',
-        500,
-        0,
-        { cpf },
-      )
-      for (const bio of pendentes) {
-        bio.set('usuario_id', e.record.id)
-        $app.save(bio)
-      }
-      if (pendentes.length > 0) {
-        $app
-          .logger()
-          .info('Bioimpedâncias vinculadas por CPF', 'cpf', cpf, 'qtd', pendentes.length)
+      // Vincula registros pendentes (sem usuario_id) das duas coleções por CPF
+      for (const colecao of ['bioimpedancia_pdf', 'fotos_paciente']) {
+        const pendentes = $app.findRecordsByFilter(
+          colecao,
+          "cpf = {:cpf} && usuario_id = ''",
+          '',
+          500,
+          0,
+          { cpf },
+        )
+        for (const rec of pendentes) {
+          rec.set('usuario_id', e.record.id)
+          $app.save(rec)
+        }
+        if (pendentes.length > 0) {
+          $app.logger().info('Registros vinculados por CPF', 'colecao', colecao, 'cpf', cpf, 'qtd', pendentes.length)
+        }
       }
     }
   } catch (err) {
-    $app.logger().error('Erro ao vincular bioimpedâncias pendentes', 'error', String(err))
+    $app.logger().error('Erro ao vincular registros pendentes', 'error', String(err))
   }
   e.next()
 }

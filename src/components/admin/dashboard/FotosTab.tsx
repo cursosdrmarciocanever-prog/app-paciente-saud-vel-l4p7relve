@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getFotosDashboard, deleteAdminRecord } from '@/services/admin-dashboard-tabs'
+import { FotoUploadForm } from './FotoUploadForm'
 import pb from '@/lib/pocketbase/client'
 import { useToast } from '@/hooks/use-toast'
 
@@ -85,6 +86,8 @@ export function FotosTab() {
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
+      <FotoUploadForm onSuccess={loadData} />
+
       <div className="flex items-center gap-2 max-w-sm">
         <Search className="h-4 w-4 text-slate-400" />
         <Input
