@@ -25,6 +25,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { BioimpedanciaEvolucao } from '@/components/evolution/BioimpedanciaEvolucao'
 import {
   getFotos,
   createFoto,
@@ -424,25 +425,46 @@ export default function ProgressoClinico() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleBioUpload} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="space-y-2 col-span-2 md:col-span-1">
                     <Label htmlFor="data_medicao">Data da Medição</Label>
                     <Input id="data_medicao" name="data_medicao" type="date" required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="massa_magra">Massa Magra (kg) - Opcional</Label>
-                    <Input id="massa_magra" name="massa_magra" type="number" step="0.1" />
+                    <Label htmlFor="peso">Peso (kg)</Label>
+                    <Input id="peso" name="peso" type="number" step="0.1" placeholder="Opcional" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="percentual_gordura">% Gordura - Opcional</Label>
+                    <Label htmlFor="massa_muscular">Massa Musc. (kg)</Label>
+                    <Input
+                      id="massa_muscular"
+                      name="massa_muscular"
+                      type="number"
+                      step="0.1"
+                      placeholder="Opcional"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="massa_gordura">Massa Gordura (kg)</Label>
+                    <Input
+                      id="massa_gordura"
+                      name="massa_gordura"
+                      type="number"
+                      step="0.1"
+                      placeholder="Opcional"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="percentual_gordura">% Gordura</Label>
                     <Input
                       id="percentual_gordura"
                       name="percentual_gordura"
                       type="number"
                       step="0.1"
+                      placeholder="Opcional"
                     />
                   </div>
-                  <div className="space-y-2 md:col-span-3">
+                  <div className="space-y-2 col-span-2 md:col-span-3">
                     <Label htmlFor="arquivo">Laudo (PDF ou Imagem, Max 500MB)</Label>
                     <Input id="arquivo" name="arquivo" type="file" accept=".pdf,image/*" required />
                   </div>
@@ -454,6 +476,8 @@ export default function ProgressoClinico() {
               </form>
             </CardContent>
           </Card>
+
+          <BioimpedanciaEvolucao dados={bioimpedancias} />
 
           <div className="space-y-4">
             {bioimpedancias.map((bio) => (
@@ -469,15 +493,25 @@ export default function ProgressoClinico() {
                     <h3 className="font-semibold text-foreground">
                       Laudo de {new Date(bio.data_medicao).toLocaleDateString('pt-BR')}
                     </h3>
-                    <div className="flex gap-4 mt-1">
-                      {bio.massa_magra > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {bio.peso > 0 && (
                         <span className="text-sm bg-secondary px-2 py-1 rounded">
-                          Massa Magra: {bio.massa_magra}kg
+                          Peso: {bio.peso}kg
+                        </span>
+                      )}
+                      {bio.massa_muscular > 0 && (
+                        <span className="text-sm bg-secondary px-2 py-1 rounded">
+                          Massa musc.: {bio.massa_muscular}kg
+                        </span>
+                      )}
+                      {bio.massa_gordura > 0 && (
+                        <span className="text-sm bg-secondary px-2 py-1 rounded">
+                          Gordura: {bio.massa_gordura}kg
                         </span>
                       )}
                       {bio.percentual_gordura > 0 && (
                         <span className="text-sm bg-secondary px-2 py-1 rounded">
-                          Gordura: {bio.percentual_gordura}%
+                          % Gordura: {bio.percentual_gordura}%
                         </span>
                       )}
                     </div>

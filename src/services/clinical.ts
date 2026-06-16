@@ -25,6 +25,9 @@ export interface BioimpedanciaPdf {
   arquivo: string
   tamanho_bytes: number
   data_medicao: string
+  peso: number
+  massa_muscular: number
+  massa_gordura: number
   massa_magra: number
   percentual_gordura: number
   created: string

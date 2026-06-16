@@ -67,7 +67,9 @@ const formSchema = z.object({
     .string()
     .refine((v) => v.replace(/\D/g, '').length === 11, 'Informe um CPF válido (11 dígitos)'),
   data_medicao: z.date({ required_error: 'Selecione a data da medição' }),
-  massa_magra: z.string().optional(),
+  peso: z.string().optional(),
+  massa_muscular: z.string().optional(),
+  massa_gordura: z.string().optional(),
   percentual_gordura: z.string().optional(),
   arquivo: z
     .any()
@@ -86,7 +88,9 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       cpf: '',
-      massa_magra: '',
+      peso: '',
+      massa_muscular: '',
+      massa_gordura: '',
       percentual_gordura: '',
       data_medicao: new Date(),
     },
@@ -99,12 +103,14 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
       const formData = new FormData()
       formData.append('cpf', values.cpf.replace(/\D/g, ''))
       formData.append('data_medicao', values.data_medicao.toISOString())
-      if (values.massa_magra && !isNaN(Number(values.massa_magra))) {
-        formData.append('massa_magra', Number(values.massa_magra).toString())
+      const appendNum = (campo: 'peso' | 'massa_muscular' | 'massa_gordura' | 'percentual_gordura') => {
+        const v = (values[campo] || '').toString().replace(',', '.')
+        if (v && !isNaN(Number(v))) formData.append(campo, Number(v).toString())
       }
-      if (values.percentual_gordura && !isNaN(Number(values.percentual_gordura))) {
-        formData.append('percentual_gordura', Number(values.percentual_gordura).toString())
-      }
+      appendNum('peso')
+      appendNum('massa_muscular')
+      appendNum('massa_gordura')
+      appendNum('percentual_gordura')
       formData.append('arquivo', values.arquivo)
       formData.append('tamanho_bytes', values.arquivo.size.toString())
 
@@ -130,7 +136,9 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
       const dataAtual = form.getValues('data_medicao')
       form.reset({
         cpf: '',
-        massa_magra: '',
+        peso: '',
+        massa_muscular: '',
+        massa_gordura: '',
         percentual_gordura: '',
         data_medicao: dataAtual,
         arquivo: undefined as unknown as File,
@@ -275,33 +283,65 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
               </FormItem>
             )}
           />
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="massa_magra"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Massa Magra (kg)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.1" placeholder="Ex: 35.5" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="percentual_gordura"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Gordura (%)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.1" placeholder="Ex: 15.2" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <div>
+            <p className="text-sm font-medium mb-1">Métricas do laudo (para o gráfico de evolução)</p>
+            <p className="text-xs text-muted-foreground mb-3">
+              Digite os valores que aparecem no PDF. Opcionais, mas necessários para o gráfico.
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="peso"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Peso (kg)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.1" placeholder="Ex: 80" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="massa_muscular"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Massa Musc. Esquelética (kg)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.1" placeholder="Ex: 37.4" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="massa_gordura"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Massa de Gordura (kg)</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.1" placeholder="Ex: 23.6" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="percentual_gordura"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>% Gordura Corporal</FormLabel>
+                    <FormControl>
+                      <Input type="number" step="0.1" placeholder="Ex: 26.5" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
           <FormField
             control={form.control}
