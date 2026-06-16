@@ -3,7 +3,10 @@ import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import {
   META_PADRAO_ML,
+  META_MIN_ML,
+  META_MAX_ML,
   getHidratacaoDoDia,
+  getMetaPreferida,
   setHidratacaoDoDia,
 } from '@/services/hidratacao'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +31,9 @@ export function WaterTrackerCard() {
         if (reg) {
           setMl(reg.quantidade_ml || 0)
           if (reg.meta_ml) setMeta(reg.meta_ml)
+        } else {
+          // sem registro hoje: usa a última meta escolhida como padrão
+          getMetaPreferida(user.id).then(setMeta)
         }
       })
       .catch(() => {})
@@ -43,6 +49,21 @@ export function WaterTrackerCard() {
       await setHidratacaoDoDia(user.id, dia, novo, meta)
     } catch (_) {
       toast({ title: 'Erro', description: 'Não foi possível salvar a hidratação.', variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const ajustarMeta = async (delta: number) => {
+    if (!user) return
+    const nova = Math.min(META_MAX_ML, Math.max(META_MIN_ML, meta + delta))
+    if (nova === meta) return
+    setMeta(nova) // otimista
+    setSaving(true)
+    try {
+      await setHidratacaoDoDia(user.id, dia, ml, nova)
+    } catch (_) {
+      toast({ title: 'Erro', description: 'Não foi possível salvar a meta.', variant: 'destructive' })
     } finally {
       setSaving(false)
     }
@@ -87,6 +108,36 @@ export function WaterTrackerCard() {
           >
             <Plus className="mr-1 h-4 w-4" /> {COPO_ML}ml
           </Button>
+        </div>
+
+        {/* Meta diária ajustável (até 6 L/dia) */}
+        <div className="flex items-center justify-between pt-3 border-t">
+          <span className="text-xs font-medium text-muted-foreground">Meta diária</span>
+          <div className="flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => ajustarMeta(-COPO_ML)}
+              disabled={saving || meta <= META_MIN_ML}
+              title="Diminuir meta"
+            >
+              <Minus className="h-3.5 w-3.5" />
+            </Button>
+            <span className="text-sm font-semibold w-16 text-center tabular-nums">
+              {(meta / 1000).toFixed(2)} L
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => ajustarMeta(COPO_ML)}
+              disabled={saving || meta >= META_MAX_ML}
+              title="Aumentar meta (até 6 L)"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

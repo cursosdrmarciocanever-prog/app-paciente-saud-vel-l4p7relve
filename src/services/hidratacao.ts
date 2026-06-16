@@ -11,6 +11,20 @@ export interface Hidratacao {
 }
 
 export const META_PADRAO_ML = 2000
+export const META_MIN_ML = 1000
+export const META_MAX_ML = 6000 // teto de 6 L/dia
+
+// Retorna a última meta escolhida pelo usuário (para usar como padrão nos próximos dias).
+export const getMetaPreferida = async (usuarioId: string): Promise<number> => {
+  try {
+    const r = await pb
+      .collection('hidratacao')
+      .getFirstListItem<Hidratacao>(`usuario_id = "${usuarioId}" && meta_ml > 0`, { sort: '-data' })
+    return r.meta_ml || META_PADRAO_ML
+  } catch (_) {
+    return META_PADRAO_ML
+  }
+}
 
 // Retorna (ou cria) o registro de hidratação do usuário para o dia informado.
 export const getHidratacaoDoDia = async (
@@ -44,7 +58,10 @@ export const setHidratacaoDoDia = async (
   if (existente) {
     return pb
       .collection('hidratacao')
-      .update<Hidratacao>(existente.id, { quantidade_ml: Math.max(0, quantidadeMl) })
+      .update<Hidratacao>(existente.id, {
+        quantidade_ml: Math.max(0, quantidadeMl),
+        meta_ml: metaMl,
+      })
   }
   return pb.collection('hidratacao').create<Hidratacao>({
     usuario_id: usuarioId,
