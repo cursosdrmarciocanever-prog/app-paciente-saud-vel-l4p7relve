@@ -33,12 +33,33 @@ function maskCpf(value: string): string {
     .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
 }
 
-// Tenta extrair um CPF (11 dígitos consecutivos) do nome do arquivo.
-// Ex.: "bioimpedancia_12345678900.pdf" -> "12345678900". Retorna '' se não achar.
-function cpfFromFilename(name: string): string {
-  const semExt = name.replace(/\.[^.]+$/, '')
-  const m = semExt.replace(/[.\-\s]/g, '').match(/\d{11}/)
-  return m ? m[0] : ''
+// Reconhece o padrão de nome de arquivo da clínica: "bio <nome> <dd-mm-aa>".
+// Ex.: "bio Anderson davi de almeida 03-06-25.PDF" -> { nome: "Anderson davi de almeida", data: 2025-06-03 }
+// Aceita data com - / . e ano de 2 ou 4 dígitos. Também extrai CPF se houver 11 dígitos.
+function parseBioFilename(filename: string): { nome: string; data: Date | null; cpf: string } {
+  let base = filename.replace(/\.[^.]+$/, '') // remove extensão
+  base = base.replace(/^\s*bio\s+/i, '') // remove prefixo "bio "
+
+  // CPF (11 dígitos consecutivos), se existir
+  const cpfMatch = base.replace(/[.\-\s]/g, '').match(/\d{11}/)
+  const cpf = cpfMatch ? cpfMatch[0] : ''
+
+  // data no fim: dd-mm-aa(aa) com separador - / .
+  const dm = base.match(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})\s*$/)
+  let data: Date | null = null
+  let nome = base.trim()
+  if (dm) {
+    nome = base.slice(0, dm.index).trim()
+    const d = parseInt(dm[1], 10)
+    const mo = parseInt(dm[2], 10)
+    let y = parseInt(dm[3], 10)
+    if (y < 100) y += 2000
+    if (mo >= 1 && mo <= 12 && d >= 1 && d <= 31) {
+      const dt = new Date(y, mo - 1, d)
+      if (!isNaN(dt.getTime())) data = dt
+    }
+  }
+  return { nome, data, cpf }
 }
 
 const formSchema = z.object({
@@ -114,7 +135,8 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
         data_medicao: dataAtual,
         arquivo: undefined as unknown as File,
       })
-      setCpfAutoDetectado(false)
+      setNomeDetectado('')
+      setPacienteEncontrado(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
       onSuccess()
     } catch (error: any) {
@@ -129,17 +151,42 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
     }
   }
 
-  const [cpfAutoDetectado, setCpfAutoDetectado] = useState(false)
+  // Nome do paciente lido do arquivo; e paciente encontrado na base (se houver conta)
+  const [nomeDetectado, setNomeDetectado] = useState('')
+  const [pacienteEncontrado, setPacienteEncontrado] = useState<string | null>(null)
 
-  // Define o arquivo e, se o CPF ainda estiver vazio, tenta preenchê-lo pelo nome do arquivo.
-  const aplicarArquivo = (file: File) => {
+  // Define o arquivo e reconhece nome/data pelo padrão "bio <nome> <dd-mm-aa>".
+  // Preenche a data; busca o paciente pelo nome para preencher o CPF (se ele já tiver conta).
+  const aplicarArquivo = async (file: File) => {
     form.setValue('arquivo', file, { shouldValidate: true })
-    const atual = (form.getValues('cpf') || '').replace(/\D/g, '')
-    if (atual.length !== 11) {
-      const detectado = cpfFromFilename(file.name)
-      if (detectado) {
-        form.setValue('cpf', maskCpf(detectado), { shouldValidate: true })
-        setCpfAutoDetectado(true)
+    setPacienteEncontrado(null)
+
+    const { nome, data, cpf } = parseBioFilename(file.name)
+    if (data) form.setValue('data_medicao', data, { shouldValidate: true })
+    setNomeDetectado(nome || '')
+
+    const cpfAtual = (form.getValues('cpf') || '').replace(/\D/g, '')
+    if (cpfAtual.length === 11) return
+
+    // 1) Se o nome do arquivo já trouxer um CPF, usa direto
+    if (cpf) {
+      form.setValue('cpf', maskCpf(cpf), { shouldValidate: true })
+      return
+    }
+
+    // 2) Senão, procura o paciente pelo nome -> preenche o CPF se ele tiver conta
+    if (nome && nome.length >= 3) {
+      try {
+        const res = await pb.collection('users').getList(1, 2, {
+          filter: `name ~ "${nome.replace(/"/g, '')}"`,
+        })
+        const comCpf = res.items.find((u: { cpf?: string }) => (u.cpf || '').length >= 11)
+        if (comCpf) {
+          form.setValue('cpf', maskCpf((comCpf as { cpf: string }).cpf), { shouldValidate: true })
+          setPacienteEncontrado((comCpf as { name?: string }).name || nome)
+        }
+      } catch (_) {
+        // sem permissão / erro -> ignora, admin digita o CPF
       }
     }
   }
@@ -166,16 +213,21 @@ export function BioimpedanciaForm({ onSuccess }: { onSuccess: () => void }) {
                     placeholder="000.000.000-00"
                     {...field}
                     onChange={(e) => {
-                      setCpfAutoDetectado(false)
+                      setPacienteEncontrado(null)
                       field.onChange(maskCpf(e.target.value))
                     }}
                   />
                 </FormControl>
-                {cpfAutoDetectado && (
+                {pacienteEncontrado ? (
                   <p className="text-xs font-medium text-green-600">
-                    CPF detectado pelo nome do arquivo — confira antes de salvar.
+                    ✓ Paciente encontrado: {pacienteEncontrado} — CPF preenchido, confira.
                   </p>
-                )}
+                ) : nomeDetectado ? (
+                  <p className="text-xs font-medium text-amber-600">
+                    Paciente no arquivo: <strong>{nomeDetectado}</strong> — informe o CPF dele
+                    (ainda sem conta no app).
+                  </p>
+                ) : null}
                 <p className="text-xs text-muted-foreground">
                   Vincula automaticamente ao paciente com este CPF. Se ele ainda não tiver conta, o
                   exame fica arquivado e é vinculado quando ele se cadastrar com este CPF.
