@@ -14,7 +14,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { FileUp, Image as ImageIcon, FileText, Activity, Trash2, Download } from 'lucide-react'
+import {
+  FileUp,
+  Image as ImageIcon,
+  FileText,
+  Activity,
+  Trash2,
+  Download,
+  Eye,
+  ExternalLink,
+} from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   getFotos,
   createFoto,
@@ -42,6 +52,35 @@ export default function ProgressoClinico() {
   const [loading, setLoading] = useState(true)
 
   const [uploading, setUploading] = useState(false)
+  // Laudo aberto no visualizador (modal)
+  const [viewer, setViewer] = useState<{ url: string; titulo: string; isPdf: boolean } | null>(null)
+  // O PocketBase serve arquivos com CSP "sandbox", que bloqueia o PDF no iframe.
+  // Então baixamos o arquivo como blob e exibimos o blob (não sofre o CSP do servidor).
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const [viewerLoading, setViewerLoading] = useState(false)
+
+  const isPdf = (filename: string) => /\.pdf$/i.test(filename)
+
+  useEffect(() => {
+    if (!viewer) return
+    let revoked = false
+    let urlCriada: string | null = null
+    setViewerLoading(true)
+    setBlobUrl(null)
+    fetch(viewer.url)
+      .then((r) => r.blob())
+      .then((b) => {
+        if (revoked) return
+        urlCriada = URL.createObjectURL(b)
+        setBlobUrl(urlCriada)
+      })
+      .catch(() => {})
+      .finally(() => !revoked && setViewerLoading(false))
+    return () => {
+      revoked = true
+      if (urlCriada) URL.revokeObjectURL(urlCriada)
+    }
+  }, [viewer])
 
   useEffect(() => {
     if (user) {
@@ -337,6 +376,19 @@ export default function ProgressoClinico() {
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() =>
+                      setViewer({
+                        url: getFileUrl('exames_pdf', exame.id, exame.arquivo),
+                        titulo: exame.nome_exame,
+                        isPdf: isPdf(exame.arquivo),
+                      })
+                    }
+                  >
+                    <Eye className="w-4 h-4 mr-1" /> Visualizar
+                  </Button>
                   <Button variant="outline" size="icon" asChild>
                     <a
                       href={getFileUrl('exames_pdf', exame.id, exame.arquivo)}
@@ -432,6 +484,19 @@ export default function ProgressoClinico() {
                   </div>
                 </div>
                 <div className="flex gap-2 self-end sm:self-auto">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() =>
+                      setViewer({
+                        url: getFileUrl('bioimpedancia_pdf', bio.id, bio.arquivo),
+                        titulo: `Laudo de ${new Date(bio.data_medicao).toLocaleDateString('pt-BR')}`,
+                        isPdf: isPdf(bio.arquivo),
+                      })
+                    }
+                  >
+                    <Eye className="w-4 h-4 mr-1" /> Visualizar
+                  </Button>
                   <Button variant="outline" size="icon" asChild>
                     <a
                       href={getFileUrl('bioimpedancia_pdf', bio.id, bio.arquivo)}
@@ -459,6 +524,44 @@ export default function ProgressoClinico() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={!!viewer} onOpenChange={(o) => !o && setViewer(null)}>
+        <DialogContent className="max-w-4xl w-[95vw] h-[85vh] flex flex-col p-4">
+          <DialogHeader>
+            <DialogTitle className="truncate pr-6">{viewer?.titulo}</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 min-h-0 rounded-md overflow-hidden border bg-muted">
+            {viewerLoading || !blobUrl ? (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-muted-foreground">
+                <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+                <p className="text-sm">Carregando laudo...</p>
+              </div>
+            ) : viewer?.isPdf ? (
+              <iframe src={blobUrl} title={viewer.titulo} className="w-full h-full" />
+            ) : (
+              <div className="w-full h-full overflow-auto flex items-center justify-center bg-black/5">
+                <img
+                  src={blobUrl}
+                  alt={viewer?.titulo}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+            )}
+          </div>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 pt-2">
+            <Button variant="outline" asChild>
+              <a href={viewer?.url} target="_blank" rel="noreferrer">
+                <ExternalLink className="w-4 h-4 mr-1" /> Abrir em nova aba
+              </a>
+            </Button>
+            <Button asChild>
+              <a href={viewer?.url} download>
+                <Download className="w-4 h-4 mr-1" /> Baixar
+              </a>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
