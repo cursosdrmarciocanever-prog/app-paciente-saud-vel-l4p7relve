@@ -32,6 +32,7 @@ const formSchema = z.object({
   funcao: z.string().optional(),
   via_administracao: z.string().optional(),
   ponsologia_recomendada: z.string().optional(),
+  composicao: z.string().optional(),
   valor: z.coerce.number().min(0).optional(),
   ativo: z.boolean().default(true),
 })
@@ -59,6 +60,7 @@ export function CatalogoFormModal({ open, onClose, item, onSuccess }: Props) {
       funcao: '',
       via_administracao: '',
       ponsologia_recomendada: '',
+      composicao: '',
       valor: 0,
       ativo: true,
     },
@@ -73,6 +75,7 @@ export function CatalogoFormModal({ open, onClose, item, onSuccess }: Props) {
           funcao: item.funcao || '',
           via_administracao: item.via_administracao || '',
           ponsologia_recomendada: item.ponsologia_recomendada || '',
+          composicao: item.composicao || '',
           valor: item.valor || 0,
           ativo: item.ativo !== false,
         })
@@ -83,6 +86,7 @@ export function CatalogoFormModal({ open, onClose, item, onSuccess }: Props) {
           funcao: '',
           via_administracao: '',
           ponsologia_recomendada: '',
+          composicao: '',
           valor: 0,
           ativo: true,
         })
@@ -148,6 +152,23 @@ export function CatalogoFormModal({ open, onClose, item, onSuccess }: Props) {
                   <FormLabel>Função</FormLabel>
                   <FormControl>
                     <input className={inputClass} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="composicao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Composição (kits) — um ativo por linha</FormLabel>
+                  <FormControl>
+                    <textarea
+                      className={inputClass + ' min-h-[100px] resize-y'}
+                      placeholder={'NMN Mono Nicot 100mg/1mL\nAlfa GPC (98%) 150mg/1mL\n...'}
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

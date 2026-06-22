@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
 import pb from '@/lib/pocketbase/client'
+import { comToken } from '@/lib/pocketbase/fileToken'
 
 function fmtCpf(cpf?: string) {
   const d = (cpf || '').replace(/\D/g, '')
@@ -115,7 +116,7 @@ export function BioimpedanciaList({ refreshTrigger }: { refreshTrigger: number }
   }
 
   const handleDownload = (record: any) => {
-    const url = pb.files.getURL(record, record.arquivo)
+    const url = comToken(pb.files.getURL(record, record.arquivo))
     const link = document.createElement('a')
     link.href = `${url}?download=1`
     link.download = record.arquivo
@@ -125,7 +126,7 @@ export function BioimpedanciaList({ refreshTrigger }: { refreshTrigger: number }
   }
 
   const handleView = (record: any) => {
-    const url = pb.files.getURL(record, record.arquivo)
+    const url = comToken(pb.files.getURL(record, record.arquivo))
     window.open(url, '_blank')
   }
 

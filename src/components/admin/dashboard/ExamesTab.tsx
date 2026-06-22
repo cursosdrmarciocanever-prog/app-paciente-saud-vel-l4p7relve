@@ -19,7 +19,9 @@ import {
 } from '@/components/ui/select'
 import { getExamesDashboard, deleteAdminRecord } from '@/services/admin-dashboard-tabs'
 import pb from '@/lib/pocketbase/client'
+import { comToken } from '@/lib/pocketbase/fileToken'
 import { useToast } from '@/hooks/use-toast'
+import { ExameUploadForm } from './ExameUploadForm'
 
 export function ExamesTab() {
   const [data, setData] = useState<any[]>([])
@@ -60,11 +62,16 @@ export function ExamesTab() {
   }
 
   const filtered = data.filter((item) => {
-    const matchName =
-      item.expand?.usuario_id?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      item.expand?.usuario_id?.email?.toLowerCase().includes(search.toLowerCase())
+    const termo = search.toLowerCase()
+    const termoCpf = search.replace(/\D/g, '')
+    const matchBusca =
+      !search ||
+      item.expand?.usuario_id?.name?.toLowerCase().includes(termo) ||
+      item.expand?.usuario_id?.email?.toLowerCase().includes(termo) ||
+      item.nome_exame?.toLowerCase().includes(termo) ||
+      (!!termoCpf && (item.cpf || '').replace(/\D/g, '').includes(termoCpf))
     const matchType = typeFilter === 'todos' || item.tipo_exame === typeFilter
-    return matchName && matchType
+    return matchBusca && matchType
   })
 
   const formatBytes = (bytes: number) => {
@@ -84,11 +91,12 @@ export function ExamesTab() {
 
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
+      <ExameUploadForm onSuccess={loadData} />
       <div className="flex flex-col sm:flex-row items-center gap-4">
         <div className="flex items-center gap-2 w-full sm:w-80">
           <Search className="h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Buscar paciente..."
+            placeholder="Buscar por CPF, nome do exame ou paciente..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-white"
@@ -133,7 +141,7 @@ export function ExamesTab() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => window.open(pb.files.getUrl(exame, exame.arquivo), '_blank')}
+                    onClick={() => window.open(comToken(pb.files.getUrl(exame, exame.arquivo)), '_blank')}
                     title="Visualizar"
                   >
                     <Eye className="h-4 w-4 text-slate-600" />
@@ -141,7 +149,7 @@ export function ExamesTab() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => window.open(pb.files.getUrl(exame, exame.arquivo), '_blank')}
+                    onClick={() => window.open(comToken(pb.files.getUrl(exame, exame.arquivo)), '_blank')}
                     title="Baixar"
                   >
                     <Download className="h-4 w-4 text-primary" />
@@ -186,14 +194,14 @@ export function ExamesTab() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => window.open(pb.files.getUrl(exame, exame.arquivo), '_blank')}
+                onClick={() => window.open(comToken(pb.files.getUrl(exame, exame.arquivo)), '_blank')}
               >
                 <Eye className="h-4 w-4 text-slate-600" />
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => window.open(pb.files.getUrl(exame, exame.arquivo), '_blank')}
+                onClick={() => window.open(comToken(pb.files.getUrl(exame, exame.arquivo)), '_blank')}
               >
                 <Download className="h-4 w-4 text-primary" />
               </Button>

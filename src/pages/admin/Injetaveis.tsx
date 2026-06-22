@@ -5,6 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 import { CatalogoTable } from '@/components/dashboard/CatalogoTable'
+import { PedidosCatalogoAdmin } from '@/components/admin/PedidosCatalogoAdmin'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import pb from '@/lib/pocketbase/client'
 
 export default function AdminInjetaveis() {
@@ -148,7 +150,18 @@ export default function AdminInjetaveis() {
         </DialogContent>
       </Dialog>
 
-      <CatalogoTable hideHeader={true} />
+      <Tabs defaultValue="catalogo" className="w-full">
+        <TabsList>
+          <TabsTrigger value="catalogo">Catálogo</TabsTrigger>
+          <TabsTrigger value="pedidos">Pedidos</TabsTrigger>
+        </TabsList>
+        <TabsContent value="catalogo" className="mt-4">
+          <CatalogoTable hideHeader={true} />
+        </TabsContent>
+        <TabsContent value="pedidos" className="mt-4">
+          <PedidosCatalogoAdmin />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

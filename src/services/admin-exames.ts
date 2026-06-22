@@ -1,4 +1,5 @@
 import pb from '@/lib/pocketbase/client'
+import { comToken } from '@/lib/pocketbase/fileToken'
 
 export function formatBytes(bytes: number, decimals = 2) {
   if (!+bytes) return '0 Bytes'
@@ -39,7 +40,7 @@ export const deleteExame = async (id: string) => {
 }
 
 export const getFileUrl = (record: any) => {
-  return pb.files.getURL(record, record.arquivo)
+  return comToken(pb.files.getURL(record, record.arquivo))
 }
 
 export const createExameWithProgress = (

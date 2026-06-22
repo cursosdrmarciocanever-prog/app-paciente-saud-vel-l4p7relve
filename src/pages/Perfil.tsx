@@ -3,13 +3,20 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { User, Mail, LogOut, Shield, Fingerprint } from 'lucide-react'
+import { User, Mail, LogOut, Shield, Fingerprint, Phone } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 function fmtCpf(cpf?: string) {
   const d = (cpf || '').replace(/\D/g, '')
   if (d.length !== 11) return cpf || ''
   return `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`
+}
+
+function fmtTelefone(tel?: string) {
+  const d = (tel || '').replace(/\D/g, '')
+  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`
+  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
+  return tel || ''
 }
 
 export default function Perfil() {
@@ -85,6 +92,20 @@ export default function Perfil() {
                   <Input
                     id="cpf"
                     value={fmtCpf((user as { cpf?: string })?.cpf) || 'Não informado'}
+                    readOnly
+                    className="pl-9 bg-slate-50"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="telefone">Telefone (WhatsApp)</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="telefone"
+                    value={
+                      fmtTelefone((user as { telefone?: string })?.telefone) || 'Não informado'
+                    }
                     readOnly
                     className="pl-9 bg-slate-50"
                   />

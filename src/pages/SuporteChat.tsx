@@ -9,27 +9,45 @@ import {
   createMensagem,
   type Conversa,
   type Mensagem,
+  type AgenteTipo,
 } from '@/services/suporte'
+
+const SAUDACOES: Record<AgenteTipo, string> = {
+  geral: 'Olá! Sou o assistente virtual da Clínica Canever. Como posso ajudar você hoje?',
+  exames:
+    'Olá! Sou o assistente de exames. Posso esclarecer dúvidas gerais sobre seus exames laboratoriais. Como posso ajudar?',
+  nutricional:
+    'Olá! Sou o assistente nutricional da Clínica Canever. Posso orientar sobre alimentação saudável e sugerir cardápios. Como posso ajudar?',
+  medico:
+    'Olá! Sou o assistente médico, na linha da medicina funcional integrativa. Como posso ajudar com suas dúvidas?',
+}
+
+interface ChatProps {
+  agente?: AgenteTipo
+  embedded?: boolean
+  // Quando fornecido, mostra um botão "Salvar como dieta" nas respostas do assistente.
+  onSaveDieta?: (conteudo: string) => void | Promise<void>
+}
 import pb from '@/lib/pocketbase/client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Loader2, Send, AlertCircle } from 'lucide-react'
+import { Loader2, Send, AlertCircle, Save } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 import { cn } from '@/lib/utils'
 import { ClientResponseError } from 'pocketbase'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 
-export default function SuporteChatWrapper() {
+export default function SuporteChatWrapper(props: ChatProps) {
   return (
     <ErrorBoundary>
-      <SuporteChat />
+      <SuporteChat {...props} />
     </ErrorBoundary>
   )
 }
 
-function SuporteChat() {
+function SuporteChat({ agente = 'geral', embedded = false, onSaveDieta }: ChatProps) {
   const { user, loading: authLoading } = useAuth()
   const { toast } = useToast()
 
@@ -59,15 +77,15 @@ function SuporteChat() {
 
   useEffect(() => {
     if (user?.id && mensagens.length > 0) {
-      localStorage.setItem(`chat_mensagens_${user.id}`, JSON.stringify(mensagens))
+      localStorage.setItem(`chat_mensagens_${agente}_${user.id}`, JSON.stringify(mensagens))
     }
-  }, [mensagens, user?.id])
+  }, [mensagens, user?.id, agente])
 
   useEffect(() => {
     if (user?.id && conversa) {
-      localStorage.setItem(`chat_conversa_${user.id}`, JSON.stringify(conversa))
+      localStorage.setItem(`chat_conversa_${agente}_${user.id}`, JSON.stringify(conversa))
     }
-  }, [conversa, user?.id])
+  }, [conversa, user?.id, agente])
 
   const initSession = useCallback(async () => {
     if (!user?.id) {
@@ -76,8 +94,8 @@ function SuporteChat() {
       return
     }
 
-    const cachedConversa = localStorage.getItem(`chat_conversa_${user.id}`)
-    const cachedMensagens = localStorage.getItem(`chat_mensagens_${user.id}`)
+    const cachedConversa = localStorage.getItem(`chat_conversa_${agente}_${user.id}`)
+    const cachedMensagens = localStorage.getItem(`chat_mensagens_${agente}_${user.id}`)
 
     if (cachedConversa && cachedMensagens) {
       try {
@@ -94,7 +112,10 @@ function SuporteChat() {
       setLoadError(null)
       pb.cancelAllRequests() // Re-initialization step to ensure clean state
       const conversas = await getConversas(user.id)
-      let active = conversas.find((c) => c.status === 'ativa')
+      // conversas antigas (sem agente) contam como 'geral'
+      let active = conversas.find(
+        (c) => c.status === 'ativa' && (c.agente || 'geral') === agente,
+      )
 
       let isNew = false
       if (!active) {
@@ -102,6 +123,7 @@ function SuporteChat() {
           usuario_id: user.id,
           status: 'ativa',
           titulo: 'Nova Conversa',
+          agente,
         })
         isNew = true
       }
@@ -115,7 +137,7 @@ function SuporteChat() {
           conversa_id: active.id,
           usuario_id: user.id,
           remetente: 'agente_ia',
-          conteudo: 'Olá! Sou o assistente virtual do Dr. Márcio. Como posso ajudar você hoje?',
+          conteudo: SAUDACOES[agente],
         })
         msgs = [initialMsg]
       }
@@ -134,7 +156,7 @@ function SuporteChat() {
     } finally {
       setLoadingSession(false)
     }
-  }, [user, toast])
+  }, [user, toast, agente])
 
   useEffect(() => {
     if (authLoading) return
@@ -286,18 +308,20 @@ function SuporteChat() {
     return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   }
 
+  const alturaContainer = embedded ? 'h-[70vh]' : 'h-[calc(100vh-4rem)]'
+
   if (loadingSession) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center flex-col gap-4 bg-white">
+      <div className={cn('flex items-center justify-center flex-col gap-4 bg-white', alturaContainer)}>
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm font-medium text-foreground">Iniciando conversa de suporte...</p>
+        <p className="text-sm font-medium text-foreground">Iniciando conversa...</p>
       </div>
     )
   }
 
   if (loadError) {
     return (
-      <div className="flex h-[calc(100vh-4rem)] items-center justify-center flex-col gap-4 bg-white px-4 text-center">
+      <div className={cn('flex items-center justify-center flex-col gap-4 bg-white px-4 text-center', alturaContainer)}>
         <AlertCircle className="h-10 w-10 text-destructive mb-2" />
         <p className="text-base font-medium text-foreground">{loadError}</p>
         <Button onClick={initSession} variant="default" className="mt-2">
@@ -308,21 +332,30 @@ function SuporteChat() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] max-w-4xl mx-auto w-full bg-white md:border-x md:border-[#E8E8E8] relative">
+    <div
+      className={cn(
+        'flex flex-col max-w-4xl mx-auto w-full bg-white relative',
+        alturaContainer,
+        !embedded && 'md:border-x md:border-[#E8E8E8]',
+        embedded && 'rounded-xl border border-[#E8E8E8]',
+      )}
+    >
       {!isOnline && (
         <div className="bg-destructive text-destructive-foreground text-center text-xs py-1.5 font-medium w-full z-10 animate-fade-in-down">
           Você está offline. Verifique sua conexão. O modo offline permite ler o histórico.
         </div>
       )}
-      <div className="flex-none p-4 md:p-6 border-b border-[#E8E8E8] bg-white flex flex-col md:flex-row md:items-center justify-between gap-2">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
-            Suporte - Clínica Canever
-            {!isOnline && <span className="flex h-2 w-2 rounded-full bg-destructive" />}
-          </h1>
-          <p className="text-sm text-foreground/70 mt-1">Converse com nosso assistente</p>
+      {!embedded && (
+        <div className="flex-none p-4 md:p-6 border-b border-[#E8E8E8] bg-white flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
+              Suporte - Clínica Canever
+              {!isOnline && <span className="flex h-2 w-2 rounded-full bg-destructive" />}
+            </h1>
+            <p className="text-sm text-foreground/70 mt-1">Converse com nosso assistente</p>
+          </div>
         </div>
-      </div>
+      )}
 
       <ScrollArea className="flex-1 p-4 md:p-6" ref={scrollRef}>
         <div className="space-y-6 pb-4">
@@ -355,6 +388,14 @@ function SuporteChat() {
                 >
                   {msg.conteudo}
                 </div>
+                {!isPatient && onSaveDieta && msg.conteudo.length > 400 && (
+                  <button
+                    onClick={() => onSaveDieta(msg.conteudo)}
+                    className="text-xs font-medium text-primary hover:underline px-1 flex items-center gap-1"
+                  >
+                    <Save className="w-3.5 h-3.5" /> Salvar como dieta
+                  </button>
+                )}
                 <span className="text-[11px] text-foreground/60 px-1">
                   {msg.created ? formatTime(msg.created) : 'agora'}
                 </span>

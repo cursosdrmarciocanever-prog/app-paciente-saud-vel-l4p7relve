@@ -40,6 +40,22 @@ onRecordCreate((e) => {
   e.next()
 }, 'fotos_paciente')
 
+// (1c) Mesmo gatilho para os EXAMES do paciente
+onRecordCreate((e) => {
+  const cpf = (e.record.getString('cpf') || '').replace(/\D/g, '')
+  if (cpf) e.record.set('cpf', cpf)
+
+  if (cpf && !e.record.getString('usuario_id')) {
+    try {
+      const paciente = $app.findFirstRecordByFilter('users', 'cpf = {:cpf}', { cpf })
+      e.record.set('usuario_id', paciente.id)
+    } catch (_) {
+      // nenhum paciente com esse CPF ainda -> fica pendente
+    }
+  }
+  e.next()
+}, 'exames_pdf')
+
 // Normaliza o CPF do usuário antes de salvar (criação e atualização)
 onRecordCreate((e) => {
   const cpf = (e.record.getString('cpf') || '').replace(/\D/g, '')
@@ -59,7 +75,7 @@ const vincularPendentes = (e) => {
     const cpf = (e.record.getString('cpf') || '').replace(/\D/g, '')
     if (cpf) {
       // Vincula registros pendentes (sem usuario_id) das duas coleções por CPF
-      for (const colecao of ['bioimpedancia_pdf', 'fotos_paciente']) {
+      for (const colecao of ['bioimpedancia_pdf', 'fotos_paciente', 'exames_pdf']) {
         const pendentes = $app.findRecordsByFilter(
           colecao,
           "cpf = {:cpf} && usuario_id = ''",

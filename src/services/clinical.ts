@@ -1,4 +1,5 @@
 import pb from '@/lib/pocketbase/client'
+import { comToken } from '@/lib/pocketbase/fileToken'
 
 export interface FotoPaciente {
   id: string
@@ -127,5 +128,6 @@ export const deleteBioimpedancia = async (id: string): Promise<boolean> => {
 }
 
 export const getFileUrl = (collection: string, recordId: string, filename: string) => {
-  return pb.files.getUrl({ collectionId: collection, id: recordId } as any, filename)
+  const url = pb.files.getUrl({ collectionId: collection, id: recordId } as any, filename)
+  return comToken(url)
 }

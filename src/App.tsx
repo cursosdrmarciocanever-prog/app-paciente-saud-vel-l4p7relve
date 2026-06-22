@@ -11,7 +11,9 @@ import MeusAgendamentos from './pages/MeusAgendamentos'
 import ProgressoClinico from './pages/ProgressoClinico'
 import FotosPaciente from './pages/FotosPaciente'
 import AtividadeFisica from './pages/AtividadeFisica'
-import Alimentacao from './pages/Alimentacao'
+import Nutricao from './pages/Nutricao'
+import Assistentes from './pages/Assistentes'
+import Privacidade from './pages/Privacidade'
 import Conquistas from './pages/Conquistas'
 import LojaInjetaveis from './pages/LojaInjetaveis'
 import CheckoutInjetavel from './pages/CheckoutInjetavel'
@@ -23,6 +25,7 @@ import SuporteChat from './pages/SuporteChat'
 import { AdminLayout } from './components/AdminLayout'
 import { PatientLayout } from './components/PatientLayout'
 import AdminDashboard from './pages/admin/Dashboard'
+import AdminProgressoClinico from './pages/admin/ProgressoClinico'
 import AdminUsuarios from './pages/admin/Usuarios'
 import AdminAssinaturas from './pages/admin/Assinaturas'
 import AdminExames from './pages/admin/Exames'
@@ -174,6 +177,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <Routes>
+          {/* Página pública de privacidade/termos (acessível a qualquer um) */}
+          <Route path="/privacidade" element={<Privacidade />} />
+
           {/* Public Routes */}
           <Route element={<Layout />}>
             <Route
@@ -198,7 +204,9 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/dashboard/fotos" element={<FotosPaciente />} />
             <Route path="/atividades" element={<AtividadeFisica />} />
-            <Route path="/alimentacao" element={<Alimentacao />} />
+            <Route path="/nutricao" element={<Nutricao />} />
+            <Route path="/assistentes" element={<Assistentes />} />
+            <Route path="/alimentacao" element={<Navigate to="/nutricao" replace />} />
             <Route path="/conquistas" element={<Conquistas />} />
             <Route path="/assinaturas" element={<Assinaturas />} />
             <Route path="/checkout" element={<Checkout />} />
@@ -265,6 +273,7 @@ const App = () => (
             }
           >
             <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="progresso-clinico" element={<AdminProgressoClinico />} />
             <Route path="horarios" element={<AgendamentoAdmin />} />
             <Route path="usuarios" element={<AdminUsuarios />} />
             <Route path="assinaturas" element={<AdminAssinaturas />} />

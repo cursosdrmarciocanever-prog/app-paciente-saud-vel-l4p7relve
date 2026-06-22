@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { getFotosDashboard, deleteAdminRecord } from '@/services/admin-dashboard-tabs'
 import { FotoUploadForm } from './FotoUploadForm'
 import pb from '@/lib/pocketbase/client'
+import { comToken } from '@/lib/pocketbase/fileToken'
 import { useToast } from '@/hooks/use-toast'
 
 export function FotosTab() {
@@ -185,7 +186,7 @@ export function FotosTab() {
               >
                 {/\.pdf$/i.test(f.foto) ? (
                   <a
-                    href={pb.files.getUrl(f, f.foto)}
+                    href={comToken(pb.files.getUrl(f, f.foto))}
                     target="_blank"
                     rel="noreferrer"
                     className="w-full h-40 flex flex-col items-center justify-center gap-1 bg-muted text-primary"
@@ -195,7 +196,7 @@ export function FotosTab() {
                   </a>
                 ) : (
                   <img
-                    src={pb.files.getUrl(f, f.foto)}
+                    src={comToken(pb.files.getUrl(f, f.foto))}
                     alt={f.descricao}
                     className="w-full h-40 object-cover"
                   />
@@ -204,7 +205,7 @@ export function FotosTab() {
                   <Button
                     size="icon"
                     variant="secondary"
-                    onClick={() => window.open(pb.files.getUrl(f, f.foto), '_blank')}
+                    onClick={() => window.open(comToken(pb.files.getUrl(f, f.foto)), '_blank')}
                     title="Baixar"
                   >
                     <Download className="h-4 w-4" />

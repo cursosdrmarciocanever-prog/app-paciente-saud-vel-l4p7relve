@@ -16,6 +16,7 @@ import {
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import pb from '@/lib/pocketbase/client'
+import { comToken } from '@/lib/pocketbase/fileToken'
 
 interface PhotoCardProps {
   foto: FotoPaciente
@@ -23,7 +24,7 @@ interface PhotoCardProps {
 }
 
 export function PhotoCard({ foto, onDelete }: PhotoCardProps) {
-  const imageUrl = pb.files.getURL(foto, foto.foto)
+  const imageUrl = comToken(pb.files.getURL(foto, foto.foto))
   const ehPdf = /\.pdf$/i.test(foto.foto)
 
   const handleDownload = async () => {

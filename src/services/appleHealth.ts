@@ -31,6 +31,41 @@ export interface ResultadoSync {
   total: number
 }
 
+export interface ResumoDiario {
+  passos: number
+  calorias: number
+}
+
+// Lê passos + calorias ativas de HOJE direto do HealthKit (ao vivo, sem persistir).
+export const getResumoHoje = async (): Promise<ResumoDiario | null> => {
+  if (!(await healthDisponivel())) return null
+
+  await Health.requestHealthPermissions({
+    permissions: ['READ_STEPS', 'READ_ACTIVE_CALORIES'],
+  })
+
+  const inicio = new Date()
+  inicio.setHours(0, 0, 0, 0)
+  const fim = new Date()
+
+  const somar = async (dataType: 'steps' | 'active-calories'): Promise<number> => {
+    try {
+      const { aggregatedData } = await Health.queryAggregated({
+        startDate: inicio.toISOString(),
+        endDate: fim.toISOString(),
+        dataType,
+        bucket: 'day',
+      })
+      return Math.round(aggregatedData.reduce((acc, s) => acc + (s.value || 0), 0))
+    } catch (_) {
+      return 0
+    }
+  }
+
+  const [passos, calorias] = await Promise.all([somar('steps'), somar('active-calories')])
+  return { passos, calorias }
+}
+
 // Pede permissão, lê os treinos dos últimos `dias` e cria os que ainda não existem.
 export const sincronizarAppleWatch = async (
   usuarioId: string,

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Mail, Lock, User, Eye, EyeOff, Loader2, Fingerprint } from 'lucide-react'
+import { Mail, Lock, User, Loader2, Fingerprint, Phone } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -28,20 +28,28 @@ function maskCpf(value: string): string {
     .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3-$4')
 }
 
-const signupSchema = z
-  .object({
-    name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
-    cpf: z
-      .string()
-      .refine((v) => v.replace(/\D/g, '').length === 11, 'Informe um CPF válido (11 dígitos)'),
-    email: z.string().email('Email inválido'),
-    password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'As senhas não coincidem',
-    path: ['confirmPassword'],
-  })
+function maskTelefone(value: string): string {
+  const d = value.replace(/\D/g, '').slice(0, 11)
+  if (d.length <= 10) {
+    return d
+      .replace(/^(\d{2})(\d)/, '($1) $2')
+      .replace(/^\((\d{2})\) (\d{4})(\d)/, '($1) $2-$3')
+  }
+  return d
+    .replace(/^(\d{2})(\d)/, '($1) $2')
+    .replace(/^\((\d{2})\) (\d{5})(\d)/, '($1) $2-$3')
+}
+
+const signupSchema = z.object({
+  name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
+  cpf: z
+    .string()
+    .refine((v) => v.replace(/\D/g, '').length === 11, 'Informe um CPF válido (11 dígitos)'),
+  email: z.string().email('Email inválido'),
+  telefone: z
+    .string()
+    .refine((v) => v.replace(/\D/g, '').length >= 10, 'Informe um telefone (WhatsApp) com DDD'),
+})
 
 type SignupFormValues = z.infer<typeof signupSchema>
 
@@ -51,8 +59,6 @@ interface SignupFormProps {
 
 export function SignupForm({ onSwitch }: SignupFormProps) {
   const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const navigate = useNavigate()
   const { toast } = useToast()
   const { signUp } = useAuth()
@@ -63,20 +69,22 @@ export function SignupForm({ onSwitch }: SignupFormProps) {
       name: '',
       cpf: '',
       email: '',
-      password: '',
-      confirmPassword: '',
+      telefone: '',
     },
   })
 
   async function onSubmit(data: SignupFormValues) {
     setIsLoading(true)
 
+    // A senha do paciente é o próprio CPF (somente dígitos).
+    const cpfDigits = data.cpf.replace(/\D/g, '')
     const { error } = await signUp({
       name: data.name,
-      cpf: data.cpf.replace(/\D/g, ''),
+      cpf: cpfDigits,
       email: data.email,
-      password: data.password,
-      passwordConfirm: data.confirmPassword,
+      telefone: data.telefone.replace(/\D/g, ''),
+      password: cpfDigits,
+      passwordConfirm: cpfDigits,
     })
 
     setIsLoading(false)
@@ -169,64 +177,33 @@ export function SignupForm({ onSwitch }: SignupFormProps) {
         />
         <FormField
           control={form.control}
-          name="password"
+          name="telefone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Senha</FormLabel>
+              <FormLabel>Telefone (WhatsApp)</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    className="pl-9 pr-9 focus-visible:ring-primary"
+                    inputMode="tel"
+                    placeholder="(00) 00000-0000"
+                    className="pl-9 focus-visible:ring-primary"
                     {...field}
+                    onChange={(e) => field.onChange(maskTelefone(e.target.value))}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
                 </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="confirmPassword"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Confirmar Senha</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    className="pl-9 pr-9 focus-visible:ring-primary"
-                    {...field}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </button>
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="rounded-lg bg-secondary/40 border border-border p-3">
+          <p className="text-xs text-muted-foreground">
+            <Lock className="inline h-3.5 w-3.5 mr-1 -mt-0.5" />
+            Sua <strong>senha de acesso será o seu CPF</strong> (somente números). O login é feito
+            com o <strong>telefone (WhatsApp)</strong> + CPF.
+          </p>
+        </div>
         <Button
           type="submit"
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"

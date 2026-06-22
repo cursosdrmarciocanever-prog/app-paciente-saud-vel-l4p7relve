@@ -34,6 +34,7 @@ export function PedidosTab() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [cpfMap, setCpfMap] = useState<Record<string, string>>({})
   const [statusFilter, setStatusFilter] = useState('todos')
   const [selectedPedido, setSelectedPedido] = useState<any | null>(null)
   const [importModalOpen, setImportModalOpen] = useState(false)
@@ -119,7 +120,13 @@ export function PedidosTab() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const records = await getPedidosDashboard()
+      const [records, usuarios] = await Promise.all([
+        getPedidosDashboard(),
+        pb.send<any[]>('/backend/v1/admin/usuarios', { method: 'GET' }).catch(() => []),
+      ])
+      const mapa: Record<string, string> = {}
+      for (const u of usuarios || []) mapa[u.id] = (u.cpf || '').replace(/\D/g, '')
+      setCpfMap(mapa)
       setData(records)
     } catch (err) {
       toast({
@@ -166,11 +173,16 @@ export function PedidosTab() {
   }
 
   const filtered = data.filter((item) => {
-    const matchName =
-      item.expand?.usuario_id?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      item.expand?.usuario_id?.email?.toLowerCase().includes(search.toLowerCase())
+    const termo = search.toLowerCase()
+    const termoCpf = search.replace(/\D/g, '')
+    const cpfPaciente = cpfMap[item.usuario_id] || ''
+    const matchBusca =
+      !search ||
+      item.expand?.usuario_id?.name?.toLowerCase().includes(termo) ||
+      item.expand?.usuario_id?.email?.toLowerCase().includes(termo) ||
+      (!!termoCpf && cpfPaciente.includes(termoCpf))
     const matchStatus = statusFilter === 'todos' || item.status === statusFilter
-    return matchName && matchStatus
+    return matchBusca && matchStatus
   })
 
   const getStatusColor = (status: string) => {
@@ -203,7 +215,7 @@ export function PedidosTab() {
         <div className="flex items-center gap-2 w-full sm:w-80">
           <Search className="h-4 w-4 text-slate-400" />
           <Input
-            placeholder="Buscar paciente..."
+            placeholder="Buscar por CPF ou paciente..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="bg-white"

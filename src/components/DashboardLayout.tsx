@@ -22,6 +22,7 @@ import {
   LogOut,
   HeartPulse,
   MessageSquare,
+  ChevronLeft,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -114,6 +115,15 @@ export function DashboardLayout() {
         <div className="flex flex-col flex-1 w-full overflow-hidden">
           <header className="flex h-14 shrink-0 items-center gap-4 border-b border-[#E5E0D8] bg-[#FFFFFF] px-4 md:px-6 shadow-sm sticky top-0 z-10">
             <SidebarTrigger className="-ml-2 text-[#4A4A4A]" />
+            {location.pathname !== '/dashboard' && (
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="flex items-center gap-1 text-primary font-medium text-sm px-2 py-1 rounded-lg active:bg-primary/10"
+              >
+                <ChevronLeft className="w-5 h-5" />
+                <span>Início</span>
+              </button>
+            )}
             <div className="flex-1 font-semibold text-[#4A4A4A]">
               {navItems.find((i) => location.pathname.startsWith(i.path))?.name || 'Portal'}
             </div>

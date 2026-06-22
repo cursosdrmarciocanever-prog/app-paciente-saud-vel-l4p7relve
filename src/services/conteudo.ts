@@ -157,3 +157,26 @@ export const deleteVideo = async (id: string) => {
     throw error
   }
 }
+
+export interface ArtigoCientifico {
+  titulo: string
+  autores: string
+  fonte: string
+  ano: string
+  resumo: string
+  doi: string
+  link: string
+}
+
+// Busca artigos científicos (admin) via endpoint server-side.
+export const buscarArtigosCientificos = async (
+  q: string,
+  fonte: 'europepmc' | 'crossref' = 'europepmc',
+): Promise<ArtigoCientifico[]> => {
+  const params = new URLSearchParams({ q, fonte })
+  const r = await pb.send<{ resultados: ArtigoCientifico[] }>(
+    `/backend/v1/admin/artigos-cientificos?${params.toString()}`,
+    { method: 'GET' },
+  )
+  return r.resultados || []
+}

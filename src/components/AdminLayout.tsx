@@ -12,6 +12,7 @@ import {
   Activity,
   Syringe,
   MessageSquare,
+  HeartPulse,
 } from 'lucide-react'
 import { ProtectedAdminRoute } from '@/components/ProtectedAdminRoute'
 import { useAuth } from '@/hooks/use-auth'
@@ -28,6 +29,7 @@ import { Button } from '@/components/ui/button'
 
 const navItems = [
   { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
+  { name: 'Progresso Clínico', path: '/admin/progresso-clinico', icon: HeartPulse },
   { name: 'Horários', path: '/admin/horarios', icon: Calendar },
   { name: 'Usuários', path: '/admin/usuarios', icon: Users },
   { name: 'Assinaturas', path: '/admin/assinaturas', icon: CreditCard },
@@ -38,6 +40,7 @@ const navItems = [
 ]
 
 function getTitle(pathname: string) {
+  if (pathname.includes('/progresso-clinico')) return 'Progresso Clínico'
   if (pathname.includes('/dashboard')) return 'Dashboard'
   if (pathname.includes('/horarios')) return 'Gestão de Horários'
   if (pathname.includes('/usuarios')) return 'Gestão de Usuários'
@@ -144,12 +147,15 @@ export function AdminLayout() {
         {/* Main Content */}
         <div className="flex flex-1 flex-col overflow-hidden">
           {/* Header */}
-          <header className="flex h-20 items-center justify-between border-b border-border bg-background px-4 shadow-sm md:px-6">
+          <header
+            className="flex h-20 items-center justify-between border-b border-border bg-background px-4 shadow-sm md:px-6"
+            style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+          >
             <div className="flex items-center">
               <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="mr-2 md:hidden">
-                    <Menu className="h-6 w-6 text-foreground" />
+                  <Button variant="ghost" size="icon" className="mr-2 md:hidden h-11 w-11 [&_svg]:size-6">
+                    <Menu className="text-foreground" />
                     <span className="sr-only">Abrir menu</span>
                   </Button>
                 </SheetTrigger>

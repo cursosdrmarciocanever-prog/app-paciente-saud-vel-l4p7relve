@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Phone, Lock, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,8 +18,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/use-auth'
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(8, 'A senha deve ter pelo menos 8 caracteres'),
+  identity: z.string().min(1, 'Informe o telefone (WhatsApp) ou e-mail'),
+  password: z.string().min(1, 'Informe a senha (CPF para novos pacientes)'),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
@@ -37,7 +37,7 @@ export function LoginForm({ onSwitch }: LoginFormProps) {
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
+      identity: '',
       password: '',
     },
   })
@@ -45,7 +45,12 @@ export function LoginForm({ onSwitch }: LoginFormProps) {
   async function onSubmit(data: LoginFormValues) {
     setIsLoading(true)
 
-    const { error } = await signIn({ email: data.email, password: data.password })
+    // Paciente: telefone (WhatsApp) + CPF. Conta antiga: e-mail + senha.
+    const isEmail = data.identity.includes('@')
+    const identity = isEmail ? data.identity.trim() : data.identity.replace(/\D/g, '')
+    const password = isEmail ? data.password : data.password.replace(/\D/g, '')
+
+    const { error } = await signIn({ identity, password })
 
     setIsLoading(false)
 
@@ -53,7 +58,7 @@ export function LoginForm({ onSwitch }: LoginFormProps) {
       toast({
         variant: 'destructive',
         title: 'Credenciais inválidas',
-        description: 'Verifique seu email e senha e tente novamente.',
+        description: 'Confira seu telefone (WhatsApp) e CPF e tente novamente.',
       })
       return
     }
@@ -69,15 +74,16 @@ export function LoginForm({ onSwitch }: LoginFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 animate-fade-in">
         <FormField
           control={form.control}
-          name="email"
+          name="identity"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel>Telefone (WhatsApp)</FormLabel>
               <FormControl>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Phone className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="seu@email.com"
+                    inputMode="text"
+                    placeholder="(00) 00000-0000"
                     className="pl-9 focus-visible:ring-primary"
                     {...field}
                   />
@@ -92,13 +98,13 @@ export function LoginForm({ onSwitch }: LoginFormProps) {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Senha</FormLabel>
+              <FormLabel>CPF</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Lock className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    placeholder="Somente os números do CPF"
                     className="pl-9 pr-9 focus-visible:ring-primary"
                     {...field}
                   />
@@ -115,6 +121,10 @@ export function LoginForm({ onSwitch }: LoginFormProps) {
             </FormItem>
           )}
         />
+        <p className="text-xs text-muted-foreground">
+          Pacientes: entre com o <strong>telefone (WhatsApp)</strong> e o <strong>CPF</strong>.
+          Contas antigas continuam pelo e-mail e senha.
+        </p>
         <Button
           type="submit"
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground transition-transform hover:scale-[1.02] active:scale-[0.98]"

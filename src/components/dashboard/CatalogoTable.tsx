@@ -26,7 +26,8 @@ import { AgendamentoInjetavelModal } from './AgendamentoInjetavelModal'
 export function CatalogoTable({ hideHeader }: { hideHeader?: boolean } = {}) {
   const { user } = useAuth()
   const { toast } = useToast()
-  const isAdmin = user?.email === 'admin@canever.com.br'
+  const isAdmin =
+    user?.email === 'admin@canever.com.br' || user?.email === 'marciocanever@hotmail.com'
   const [data, setData] = useState<CatalogoInjetavel[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')

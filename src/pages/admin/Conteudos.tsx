@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ArtigosManager } from '@/components/admin/conteudos/ArtigosManager'
 import { VideosManager } from '@/components/admin/conteudos/VideosManager'
+import { BuscarArtigosCientificos } from '@/components/admin/conteudos/BuscarArtigosCientificos'
 import { getCategorias, type Categoria } from '@/services/conteudo'
 import { useToast } from '@/hooks/use-toast'
 
@@ -31,15 +32,19 @@ export default function ConteudosPage() {
       </div>
 
       <Tabs defaultValue="artigos" className="w-full">
-        <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+        <TabsList className="grid w-full max-w-[560px] grid-cols-3">
           <TabsTrigger value="artigos">Artigos</TabsTrigger>
           <TabsTrigger value="videos">Vídeos</TabsTrigger>
+          <TabsTrigger value="cientificos">Artigos Científicos</TabsTrigger>
         </TabsList>
         <TabsContent value="artigos" className="mt-6">
           <ArtigosManager categorias={categorias} />
         </TabsContent>
         <TabsContent value="videos" className="mt-6">
           <VideosManager categorias={categorias} />
+        </TabsContent>
+        <TabsContent value="cientificos" className="mt-6">
+          <BuscarArtigosCientificos categorias={categorias} />
         </TabsContent>
       </Tabs>
     </div>

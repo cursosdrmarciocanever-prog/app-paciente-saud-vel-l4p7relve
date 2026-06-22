@@ -7,6 +7,7 @@ export interface CatalogoInjetavel {
   funcao?: string
   via_administracao?: string
   ponsologia_recomendada?: string
+  composicao?: string
   valor?: number
   ativo: boolean
   created: string

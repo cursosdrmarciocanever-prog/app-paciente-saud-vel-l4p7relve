@@ -2,10 +2,13 @@ import pb from '@/lib/pocketbase/client'
 import { z } from 'zod'
 import { ClientResponseError } from 'pocketbase'
 
+export type AgenteTipo = 'geral' | 'exames' | 'nutricional' | 'medico'
+
 export const conversaSchema = z.object({
   usuario_id: z.string().min(1, 'Usuário é obrigatório'),
   titulo: z.string().optional(),
   status: z.enum(['ativa', 'encerrada']).default('ativa'),
+  agente: z.enum(['geral', 'exames', 'nutricional', 'medico']).optional(),
 })
 
 export const mensagemSchema = z.object({
@@ -59,11 +62,13 @@ export const createConversa = async (data: z.infer<typeof conversaSchema>) => {
   }
 }
 
-export const getConversas = async (usuarioId?: string) => {
+export const getConversas = async (usuarioId?: string, agente?: AgenteTipo) => {
   try {
-    const filter = usuarioId ? `usuario_id = "${usuarioId}"` : ''
+    const partes: string[] = []
+    if (usuarioId) partes.push(`usuario_id = "${usuarioId}"`)
+    if (agente) partes.push(`agente = "${agente}"`)
     return await pb.collection('conversas_suporte').getFullList<Conversa>({
-      filter,
+      filter: partes.join(' && '),
       sort: '-updated',
       expand: 'usuario_id',
     })

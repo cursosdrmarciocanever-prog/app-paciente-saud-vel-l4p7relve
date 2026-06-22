@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import pb from '@/lib/pocketbase/client'
+import { startFileTokenRefresh } from '@/lib/pocketbase/fileToken'
 import type { AuthModel } from 'pocketbase'
 
 interface AuthContextType {
@@ -52,10 +53,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     initAuth()
 
+    // mantém um token de acesso a arquivos protegidos sempre válido
+    startFileTokenRefresh()
+
     const unsubscribe = pb.authStore.onChange((_token, record) => {
       if (isMounted) {
         setUser(pb.authStore.isValid ? record : null)
       }
+      if (pb.authStore.isValid) startFileTokenRefresh()
     })
 
     return () => {
@@ -77,7 +82,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (data: any) => {
     try {
-      const authData = await pb.collection('users').authWithPassword(data.email, data.password)
+      const identity = data.identity ?? data.email
+      const authData = await pb.collection('users').authWithPassword(identity, data.password)
       setUser(authData.record)
       return { error: null }
     } catch (error) {

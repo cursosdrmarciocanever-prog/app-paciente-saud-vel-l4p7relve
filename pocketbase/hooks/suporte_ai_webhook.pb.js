@@ -1,10 +1,10 @@
 routerAdd('POST', '/backend/v1/suporte/webhook', (e) => {
-  const body = e.requestInfo().body
-  if (!body.conversa_id || !body.conteudo) {
-    return e.badRequestError('Missing conversa_id or conteudo')
-  }
-
   try {
+    const body = e.requestInfo().body
+    if (!body.conversa_id || !body.conteudo) {
+      return e.badRequestError('Missing conversa_id or conteudo')
+    }
+
     const conversa = $app.findRecordById('conversas_suporte', body.conversa_id)
     const mensagens = $app.findCollectionByNameOrId('mensagens_suporte')
     const record = new Record(mensagens)
@@ -18,6 +18,7 @@ routerAdd('POST', '/backend/v1/suporte/webhook', (e) => {
 
     return e.json(200, { success: true, message_id: record.id })
   } catch (error) {
+    $app.logger().error('SUPORTE_WEBHOOK_FAIL', 'erro', String(error))
     return e.internalServerError('Failed to process webhook')
   }
 })

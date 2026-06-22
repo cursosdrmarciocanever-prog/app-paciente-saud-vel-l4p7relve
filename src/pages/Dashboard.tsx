@@ -23,15 +23,19 @@ import {
   Loader2,
   MessageSquare,
   Dumbbell,
+  Syringe,
+  ChevronDown,
 } from 'lucide-react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CatalogoTable } from '@/components/dashboard/CatalogoTable'
 import { WaterTrackerCard } from '@/components/dashboard/WaterTrackerCard'
+import { AppleHealthCard } from '@/components/dashboard/AppleHealthCard'
 
 export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [catalogoAberto, setCatalogoAberto] = useState(false)
   const [assinatura, setAssinatura] = useState<Assinatura | null>(null)
   const [proximaConsulta, setProximaConsulta] = useState<Agendamento | null>(null)
   const [loading, setLoading] = useState(true)
@@ -322,9 +326,13 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <WaterTrackerCard />
-        <Card className="lg:col-span-2 flex flex-col justify-center">
+        <AppleHealthCard />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-3 flex flex-col justify-center">
           <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
             <div>
               <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -349,7 +357,36 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <CatalogoTable />
+      <div>
+        <button
+          onClick={() => setCatalogoAberto((v) => !v)}
+          className="w-full flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-4 shadow-sm hover:bg-secondary/30 transition-colors"
+        >
+          <span className="flex items-center gap-3">
+            <span className="p-2 rounded-lg bg-primary/10 text-primary">
+              <Syringe className="h-5 w-5" />
+            </span>
+            <span className="text-left">
+              <span className="block font-semibold text-foreground">
+                Catálogo completo de injetáveis
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                Toque para ver a tabela com funções e valores
+              </span>
+            </span>
+          </span>
+          <ChevronDown
+            className={`h-5 w-5 text-muted-foreground transition-transform ${
+              catalogoAberto ? 'rotate-180' : ''
+            }`}
+          />
+        </button>
+        {catalogoAberto && (
+          <div className="mt-2">
+            <CatalogoTable hideHeader />
+          </div>
+        )}
+      </div>
     </div>
   )
 }

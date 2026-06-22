@@ -1,4 +1,4 @@
-import { Outlet, Link, useLocation } from 'react-router-dom'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Sidebar,
   SidebarContent,
@@ -28,19 +28,24 @@ import {
   Dumbbell,
   UtensilsCrossed,
   Trophy,
+  ChevronLeft,
+  Sparkles,
+  ShieldCheck,
 } from 'lucide-react'
 import logoUrl from '@/assets/captura-de-tela-2026-05-06-as-05.37.05-68d31.png'
 
 export function PatientLayout() {
   const { signOut } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
 
   const navItems = [
     { title: 'Início', url: '/dashboard', icon: Home },
     { title: 'Meus Agendamentos', url: '/meus-agendamentos', icon: Calendar },
     { title: 'Progresso Clínico', url: '/progresso-clinico', icon: Activity },
     { title: 'Atividade Física', url: '/atividades', icon: Dumbbell },
-    { title: 'Diário Alimentar', url: '/alimentacao', icon: UtensilsCrossed },
+    { title: 'Nutrição', url: '/nutricao', icon: UtensilsCrossed },
+    { title: 'Assistentes', url: '/assistentes', icon: Sparkles },
     { title: 'Conquistas', url: '/conquistas', icon: Trophy },
     { title: 'Minhas Fotos', url: '/dashboard/fotos', icon: Camera },
     { title: 'Loja de Injetáveis', url: '/injetaveis', icon: ShoppingBag },
@@ -93,6 +98,14 @@ export function PatientLayout() {
           <SidebarFooter className="p-4 border-t border-border">
             <SidebarMenu>
               <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link to="/privacidade" className="text-muted-foreground hover:text-foreground">
+                    <ShieldCheck />
+                    <span>Privacidade e Termos</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={() => signOut()}
                   className="text-[#EF4444] hover:text-[#EF4444] hover:bg-[#EF4444]/10 transition-colors"
@@ -107,14 +120,45 @@ export function PatientLayout() {
         </Sidebar>
 
         <div className="flex-1 flex flex-col min-h-screen max-w-full overflow-hidden relative">
-          <header className="h-14 md:hidden border-b border-border bg-background flex items-center px-4 sticky top-0 z-10 shadow-sm">
-            <SidebarTrigger className="-ml-2" />
-            <span className="ml-2 font-bold text-foreground">Clínica Canever</span>
+          <header
+            className="md:hidden border-b border-border bg-background sticky top-0 z-30 shadow-sm"
+            style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+          >
+            <div className="h-16 flex items-center px-3 gap-2">
+              <SidebarTrigger className="h-11 w-11 shrink-0 text-foreground [&_svg]:size-6" />
+              <span className="flex-1 font-bold text-foreground truncate">Clínica Canever</span>
+            </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 md:p-8">
             <Outlet />
           </main>
         </div>
+
+        {location.pathname !== '/dashboard' && (
+          <button
+            onClick={() => navigate('/dashboard')}
+            aria-label="Voltar para o início"
+            className="md:hidden fixed left-4 z-50 flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-primary-foreground shadow-lg active:scale-95 transition-transform"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
+          >
+            <ChevronLeft className="w-5 h-5" />
+            <span className="text-sm font-semibold">Início</span>
+          </button>
+        )}
+
+        {/* Botão flutuante de logout (mobile) — canto superior direito */}
+        <button
+          onClick={() => {
+            signOut()
+            navigate('/login')
+          }}
+          aria-label="Sair da conta"
+          className="md:hidden fixed right-3 z-50 flex items-center gap-1.5 rounded-full bg-[#EF4444] px-3 py-2 text-white shadow-lg active:scale-95 transition-transform"
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 0.625rem)' }}
+        >
+          <LogOut className="w-4 h-4" />
+          <span className="text-sm font-semibold">Sair</span>
+        </button>
       </div>
     </SidebarProvider>
   )

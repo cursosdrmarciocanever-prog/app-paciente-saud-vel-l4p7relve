@@ -34,6 +34,7 @@ routerAdd(
         name: u.getString('name'),
         email: u.email(),
         cpf: u.getString('cpf'),
+        telefone: u.getString('telefone'),
         created: u.getString('created'),
         plano: a ? a.getString('plano') : 'Nenhum',
         status: a ? a.getString('status') : 'Inativo',
