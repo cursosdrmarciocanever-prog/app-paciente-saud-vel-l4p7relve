@@ -50,6 +50,8 @@ export default function AdminProgressoClinico() {
   // formulário de nova dieta (admin)
   const [novaTitulo, setNovaTitulo] = useState('')
   const [novoConteudo, setNovoConteudo] = useState('')
+  const [novoArquivo, setNovoArquivo] = useState<File | null>(null)
+  const dietaFileRef = useRef<HTMLInputElement>(null)
   const [salvandoDieta, setSalvandoDieta] = useState(false)
 
   // visualizador (blob para driblar o CSP do PocketBase)
@@ -99,17 +101,23 @@ export default function AdminProgressoClinico() {
   }
 
   const salvarNovaDieta = async () => {
-    if (!paciente || !novaTitulo.trim() || !novoConteudo.trim()) return
+    // precisa de título + (conteúdo OU arquivo PDF)
+    if (!paciente || !novaTitulo.trim() || (!novoConteudo.trim() && !novoArquivo)) return
     setSalvandoDieta(true)
     try {
-      await criarDieta({
-        usuario_id: paciente.id,
-        titulo: novaTitulo.trim(),
-        conteudo: novoConteudo.trim(),
-        origem: 'admin',
-      })
+      await criarDieta(
+        {
+          usuario_id: paciente.id,
+          titulo: novaTitulo.trim(),
+          conteudo: novoConteudo.trim(),
+          origem: 'admin',
+        },
+        novoArquivo || undefined,
+      )
       setNovaTitulo('')
       setNovoConteudo('')
+      setNovoArquivo(null)
+      if (dietaFileRef.current) dietaFileRef.current.value = ''
       setDietas(await getDietas(paciente.id))
       toast({ title: 'Dieta criada', description: 'Já disponível para o paciente.' })
     } catch (_) {
@@ -371,12 +379,23 @@ export default function AdminProgressoClinico() {
                   <Textarea
                     value={novoConteudo}
                     onChange={(e) => setNovoConteudo(e.target.value)}
-                    placeholder="Cole ou escreva o plano alimentar aqui..."
-                    rows={8}
+                    placeholder="Cole ou escreva o plano alimentar aqui... (ou anexe um PDF abaixo)"
+                    rows={6}
                   />
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Anexar PDF da dieta (opcional — preserva o layout original)
+                    </label>
+                    <Input
+                      ref={dietaFileRef}
+                      type="file"
+                      accept=".pdf,image/*"
+                      onChange={(e) => setNovoArquivo(e.target.files?.[0] || null)}
+                    />
+                  </div>
                   <Button
                     onClick={salvarNovaDieta}
-                    disabled={salvandoDieta || !novaTitulo.trim() || !novoConteudo.trim()}
+                    disabled={salvandoDieta || !novaTitulo.trim() || (!novoConteudo.trim() && !novoArquivo)}
                   >
                     {salvandoDieta ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />

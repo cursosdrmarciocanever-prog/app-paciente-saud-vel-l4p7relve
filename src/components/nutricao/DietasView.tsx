@@ -3,7 +3,7 @@ import { jsPDF } from 'jspdf'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { FileText, Eye, Trash2, X, Utensils, Download } from 'lucide-react'
-import type { Dieta } from '@/services/dietas'
+import { getDietaArquivoUrl, type Dieta } from '@/services/dietas'
 
 interface Props {
   dietas: Dieta[]
@@ -90,16 +90,36 @@ export function DietasView({ dietas, onExcluir, vazio }: Props) {
                 <p className="text-xs text-muted-foreground">
                   {fmt(d.created)}
                   {d.origem === 'admin' ? ' • pela equipe' : d.origem === 'assistente' ? ' • assistente' : ''}
+                  {d.arquivo ? ' • PDF' : ''}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="outline" size="sm" onClick={() => setAberta(d)}>
-                <Eye className="w-4 h-4 mr-1" /> Abrir
-              </Button>
-              <Button variant="ghost" size="icon" title="Baixar PDF" onClick={() => gerarPdfDieta(d)}>
-                <Download className="w-4 h-4" />
-              </Button>
+              {d.arquivo ? (
+                // Dieta anexada como arquivo (PDF/imagem): abre/baixa o original.
+                <>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={getDietaArquivoUrl(d)} target="_blank" rel="noreferrer">
+                      <Eye className="w-4 h-4 mr-1" /> Abrir
+                    </a>
+                  </Button>
+                  <Button variant="ghost" size="icon" title="Baixar" asChild>
+                    <a href={getDietaArquivoUrl(d)} download>
+                      <Download className="w-4 h-4" />
+                    </a>
+                  </Button>
+                </>
+              ) : (
+                // Dieta em texto: visualizador interno + PDF gerado.
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setAberta(d)}>
+                    <Eye className="w-4 h-4 mr-1" /> Abrir
+                  </Button>
+                  <Button variant="ghost" size="icon" title="Baixar PDF" onClick={() => gerarPdfDieta(d)}>
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
               {onExcluir && (
                 <Button variant="ghost" size="icon" onClick={() => onExcluir(d.id)}>
                   <Trash2 className="w-4 h-4 text-destructive" />
