@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core'
-import { Health } from 'capacitor-health'
+import { Health } from '@flomentumsolutions/capacitor-health-extended'
 import pb from '@/lib/pocketbase/client'
 
 // Disponível apenas no app nativo iOS (Apple Watch via HealthKit).
@@ -109,6 +109,49 @@ export const getHistoricoPassos = async (dias = 7): Promise<DiaPassos[]> => {
   }
 
   return Array.from(mapa.entries()).map(([dia, passos]) => ({ dia, passos }))
+}
+
+// Frequência cardíaca de REPOUSO mais recente (bpm). Vem de qualquer relógio
+// sincronizado ao Apple Saúde. Retorna null se indisponível.
+export const getFcRepouso = async (): Promise<number | null> => {
+  if (!(await healthDisponivel())) return null
+  try {
+    await Health.requestHealthPermissions({ permissions: ['READ_RESTING_HEART_RATE'] })
+    const r = await Health.queryLatestSample({ dataType: 'resting-heart-rate' })
+    return r && typeof r.value === 'number' && r.value > 0 ? Math.round(r.value) : null
+  } catch (_) {
+    return null
+  }
+}
+
+export interface ResumoSono {
+  minutos: number // duração total dormida
+  inicio: number // epoch ms
+  fim: number // epoch ms
+}
+
+// Última sessão de SONO (do Apple Saúde / Health Connect). A duração vem do
+// `value` quando disponível; senão é calculada pelos horários de início/fim.
+export const getSono = async (): Promise<ResumoSono | null> => {
+  if (!(await healthDisponivel())) return null
+  try {
+    await Health.requestHealthPermissions({ permissions: ['READ_SLEEP'] })
+    const r = await Health.queryLatestSample({ dataType: 'sleep' })
+    if (!r || !r.timestamp) return null
+    const inicio = r.timestamp
+    const fim = r.endTimestamp || r.timestamp
+    let minutos = typeof r.value === 'number' && r.value > 0 ? Math.round(r.value) : 0
+    // Heurística de unidade: alguns retornos vêm em horas ou segundos.
+    if (minutos > 0) {
+      if (/h|hour|hora/i.test(r.unit || '') && minutos <= 24) minutos = Math.round(minutos * 60)
+      else if (/s|sec|seg/i.test(r.unit || '') && minutos > 1440) minutos = Math.round(minutos / 60)
+    }
+    if (!minutos && fim > inicio) minutos = Math.round((fim - inicio) / 60000)
+    if (!minutos) return null
+    return { minutos, inicio, fim }
+  } catch (_) {
+    return null
+  }
 }
 
 // Pede permissão, lê os treinos dos últimos `dias` e cria os que ainda não existem.

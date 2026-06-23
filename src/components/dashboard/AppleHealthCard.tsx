@@ -5,13 +5,22 @@ import {
   healthDisponivel,
   getResumoHoje,
   getHistoricoPassos,
+  getFcRepouso,
+  getSono,
   sincronizarAppleWatch,
   type ResumoDiario,
   type DiaPassos,
+  type ResumoSono,
 } from '@/services/appleHealth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Footprints, Flame, RefreshCw, Activity } from 'lucide-react'
+import { Footprints, Flame, RefreshCw, Activity, Heart, Moon } from 'lucide-react'
+
+const fmtSono = (min: number) => {
+  const h = Math.floor(min / 60)
+  const m = min % 60
+  return h > 0 ? `${h}h${m > 0 ? ` ${m}min` : ''}` : `${m}min`
+}
 
 export function AppleHealthCard() {
   const { user } = useAuth()
@@ -19,6 +28,8 @@ export function AppleHealthCard() {
   const [disponivel, setDisponivel] = useState(false)
   const [resumo, setResumo] = useState<ResumoDiario | null>(null)
   const [historico, setHistorico] = useState<DiaPassos[]>([])
+  const [fcRepouso, setFcRepouso] = useState<number | null>(null)
+  const [sono, setSono] = useState<ResumoSono | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [sincronizando, setSincronizando] = useState(false)
 
@@ -35,9 +46,16 @@ export function AppleHealthCard() {
         return
       }
       try {
-        const [r, h] = await Promise.all([getResumoHoje(), getHistoricoPassos(7)])
+        const [r, h, fc, s] = await Promise.all([
+          getResumoHoje(),
+          getHistoricoPassos(7),
+          getFcRepouso(),
+          getSono(),
+        ])
         if (ativo && r) setResumo(r)
         if (ativo && h.length) setHistorico(h)
+        if (ativo) setFcRepouso(fc)
+        if (ativo) setSono(s)
       } catch (_) {
         /* silencioso */
       } finally {
@@ -56,13 +74,17 @@ export function AppleHealthCard() {
     if (!user) return
     setSincronizando(true)
     try {
-      const [r, h, sync] = await Promise.all([
+      const [r, h, fc, s, sync] = await Promise.all([
         getResumoHoje(),
         getHistoricoPassos(7),
+        getFcRepouso(),
+        getSono(),
         sincronizarAppleWatch(user.id, 90),
       ])
       if (r) setResumo(r)
       if (h.length) setHistorico(h)
+      setFcRepouso(fc)
+      setSono(s)
       toast({
         title: 'Apple Watch sincronizado',
         description:
@@ -155,6 +177,29 @@ export function AppleHealthCard() {
                   </div>
                 ))
               })()}
+            </div>
+          </div>
+        )}
+
+        {(fcRepouso || sono) && (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="flex items-center gap-2 rounded-xl bg-secondary/40 p-3">
+              <Heart className="h-5 w-5 text-rose-500 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground leading-tight">
+                  {fcRepouso ? `${fcRepouso} bpm` : '—'}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-tight">FC de repouso</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 rounded-xl bg-secondary/40 p-3">
+              <Moon className="h-5 w-5 text-indigo-400 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground leading-tight">
+                  {sono ? fmtSono(sono.minutos) : '—'}
+                </p>
+                <p className="text-[11px] text-muted-foreground leading-tight">Sono · última noite</p>
+              </div>
             </div>
           </div>
         )}
