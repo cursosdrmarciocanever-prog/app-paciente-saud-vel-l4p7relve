@@ -48,9 +48,10 @@ routerAdd(
       'Identifique os alimentos visíveis e estime a porção de cada um. ' +
       'Calcule a estimativa de calorias e macronutrientes do prato inteiro. ' +
       'Responda SOMENTE com um JSON válido, sem markdown, sem cercas de código, sem texto antes ou depois. ' +
-      'Formato exato: {"descricao": string, "calorias": number, "proteinas": number, "carboidratos": number, "gorduras": number, "confianca": "alta"|"media"|"baixa", "observacao": string}. ' +
+      'Formato exato: {"descricao": string, "calorias": number, "proteinas": number, "carboidratos": number, "gorduras": number, "micros": [{"nome": string, "quantidade": number, "unidade": string}], "confianca": "alta"|"media"|"baixa", "observacao": string}. ' +
       '"descricao" = lista curta dos alimentos com a porção estimada (ex.: "150g arroz branco, 120g frango grelhado, salada de folhas"). ' +
       'calorias em kcal; proteinas, carboidratos e gorduras em GRAMAS (números, sem unidade). ' +
+      '"micros" = lista dos 4 a 8 micronutrientes mais relevantes do prato (vitaminas/minerais/fibras), cada um com nome (ex.: "Fibras", "Sódio", "Ferro", "Cálcio", "Potássio", "Vitamina C", "Vitamina A"), quantidade (número) e unidade ("g", "mg" ou "mcg"). Inclua sempre fibras e sódio quando fizer sentido. ' +
       '"observacao" = frase curta opcional (deixe "" se não houver). ' +
       'Os valores são ESTIMATIVAS aproximadas baseadas na imagem. ' +
       'Se a imagem NÃO for um prato/alimento, responda {"erro": "Não identifiquei um prato de comida na foto."}.'
@@ -119,12 +120,27 @@ routerAdd(
       const n = Number(v)
       return isNaN(n) || n < 0 ? 0 : Math.round(n)
     }
+    // Normaliza a lista de micronutrientes (tolerante: ignora itens malformados).
+    const micros = []
+    if (Array.isArray(parsed.micros)) {
+      for (const m of parsed.micros) {
+        if (!m || !m.nome) continue
+        const q = Number(m.quantidade)
+        micros.push({
+          nome: String(m.nome).trim(),
+          quantidade: isNaN(q) || q < 0 ? 0 : Math.round(q * 10) / 10,
+          unidade: String(m.unidade || '').trim(),
+        })
+        if (micros.length >= 10) break
+      }
+    }
     return e.json(200, {
       descricao: String(parsed.descricao || '').trim(),
       calorias: num(parsed.calorias),
       proteinas: num(parsed.proteinas),
       carboidratos: num(parsed.carboidratos),
       gorduras: num(parsed.gorduras),
+      micros: micros,
       confianca: ['alta', 'media', 'baixa'].indexOf(String(parsed.confianca)) >= 0 ? String(parsed.confianca) : 'media',
       observacao: String(parsed.observacao || '').trim(),
     })

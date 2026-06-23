@@ -1,5 +1,11 @@
 import pb from '@/lib/pocketbase/client'
 
+export interface Micronutriente {
+  nome: string
+  quantidade: number
+  unidade: string
+}
+
 export type TipoRefeicao =
   | 'cafe_da_manha'
   | 'lanche_manha'
@@ -18,6 +24,8 @@ export interface Refeicao {
   proteinas?: number
   carboidratos?: number
   gorduras?: number
+  micros?: Micronutriente[]
+  foto?: string
   horario?: string
   created: string
   updated: string
@@ -49,7 +57,18 @@ export const getRefeicoes = async (usuarioId: string) => {
   })
 }
 
-export const criarRefeicao = async (data: Partial<Refeicao>) => {
+// Cria a refeição. Se houver foto, usa FormData (upload do arquivo); o campo
+// `micros` (JSON) é serializado. Caso contrário, envia JSON simples.
+export const criarRefeicao = async (data: Partial<Refeicao>, fotoFile?: File) => {
+  if (fotoFile) {
+    const fd = new FormData()
+    Object.entries(data).forEach(([k, v]) => {
+      if (v === undefined || v === null) return
+      fd.append(k, typeof v === 'object' ? JSON.stringify(v) : String(v))
+    })
+    fd.append('foto', fotoFile)
+    return pb.collection('refeicoes').create<Refeicao>(fd)
+  }
   return pb.collection('refeicoes').create<Refeicao>(data)
 }
 

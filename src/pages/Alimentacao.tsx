@@ -6,13 +6,16 @@ import { useRealtime } from '@/hooks/use-realtime'
 import {
   Refeicao,
   TipoRefeicao,
+  Micronutriente,
   TIPO_REFEICAO_LABEL,
   ORDEM_REFEICAO,
   getRefeicoes,
   criarRefeicao,
   deletarRefeicao,
 } from '@/services/refeicoes'
-import { analisarFotoPrato, type AnaliseFoto } from '@/services/nutricaoFoto'
+import { analisarFotoPrato, prepararFotoParaUpload, type AnaliseFoto } from '@/services/nutricaoFoto'
+import pb from '@/lib/pocketbase/client'
+import { comToken } from '@/lib/pocketbase/fileToken'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -84,6 +87,8 @@ export default function Alimentacao({ premium = false }: { premium?: boolean }) 
   const [aProteinas, setAProteinas] = useState('')
   const [aCarboidratos, setACarboidratos] = useState('')
   const [aGorduras, setAGorduras] = useState('')
+  const [aMicros, setAMicros] = useState<Micronutriente[]>([])
+  const [aFotoFile, setAFotoFile] = useState<File | null>(null)
 
   const fetch = async () => {
     if (!user) return
@@ -185,6 +190,8 @@ export default function Alimentacao({ premium = false }: { premium?: boolean }) 
       setAProteinas(String(r.proteinas))
       setACarboidratos(String(r.carboidratos))
       setAGorduras(String(r.gorduras))
+      setAMicros(r.micros || [])
+      setAFotoFile(file)
       setAnaliseConfianca(r.confianca)
       setAnaliseObs(r.observacao)
       setATipo(tipoSugeridoAgora())
@@ -209,18 +216,25 @@ export default function Alimentacao({ premium = false }: { premium?: boolean }) 
     }
     setSaving(true)
     try {
-      await criarRefeicao({
-        usuario_id: user.id,
-        tipo_refeicao: aTipo,
-        descricao: aDescricao.trim(),
-        data: aData,
-        calorias: aCalorias ? parseInt(aCalorias, 10) : undefined,
-        proteinas: aProteinas ? parseInt(aProteinas, 10) : undefined,
-        carboidratos: aCarboidratos ? parseInt(aCarboidratos, 10) : undefined,
-        gorduras: aGorduras ? parseInt(aGorduras, 10) : undefined,
-      })
+      const fotoFile = aFotoFile ? await prepararFotoParaUpload(aFotoFile) : undefined
+      await criarRefeicao(
+        {
+          usuario_id: user.id,
+          tipo_refeicao: aTipo,
+          descricao: aDescricao.trim(),
+          data: aData,
+          calorias: aCalorias ? parseInt(aCalorias, 10) : undefined,
+          proteinas: aProteinas ? parseInt(aProteinas, 10) : undefined,
+          carboidratos: aCarboidratos ? parseInt(aCarboidratos, 10) : undefined,
+          gorduras: aGorduras ? parseInt(aGorduras, 10) : undefined,
+          micros: aMicros.length ? aMicros : undefined,
+        },
+        fotoFile,
+      )
       toast({ title: 'Adicionado ao diário!', description: 'Refeição registrada com a estimativa.' })
       setConfirmOpen(false)
+      setAFotoFile(null)
+      setAMicros([])
       fetch()
     } catch (_) {
       toast({ title: 'Erro', description: 'Não foi possível salvar a refeição.', variant: 'destructive' })
@@ -393,6 +407,22 @@ export default function Alimentacao({ premium = false }: { premium?: boolean }) 
                 <Input type="number" min={0} value={aGorduras} onChange={(e) => setAGorduras(e.target.value)} />
               </div>
             </div>
+            {aMicros.length > 0 && (
+              <div className="space-y-1.5">
+                <Label className="text-xs">Micronutrientes estimados</Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {aMicros.map((m, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground"
+                    >
+                      {m.nome}: {m.quantidade}
+                      {m.unidade}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>
@@ -431,21 +461,36 @@ export default function Alimentacao({ premium = false }: { premium?: boolean }) 
                   <ul className="divide-y divide-border">
                     {itens.map((r) => (
                       <li key={r.id} className="flex items-start justify-between py-3 gap-3">
-                        <div>
-                          <p className="font-medium">
-                            {TIPO_REFEICAO_LABEL[r.tipo_refeicao]}
-                            {r.horario ? (
-                              <span className="text-muted-foreground font-normal"> · {r.horario}</span>
+                        <div className="flex items-start gap-3 min-w-0">
+                          {r.foto ? (
+                            <img
+                              src={comToken(pb.files.getURL(r, r.foto, { thumb: '100x100' }))}
+                              alt="Foto do prato"
+                              loading="lazy"
+                              className="h-16 w-16 rounded-md object-cover border border-border shrink-0"
+                            />
+                          ) : null}
+                          <div className="min-w-0">
+                            <p className="font-medium">
+                              {TIPO_REFEICAO_LABEL[r.tipo_refeicao]}
+                              {r.horario ? (
+                                <span className="text-muted-foreground font-normal"> · {r.horario}</span>
+                              ) : null}
+                            </p>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                              {r.descricao}
+                            </p>
+                            <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-1">
+                              {r.calorias ? <span>{r.calorias} kcal</span> : null}
+                              {r.proteinas ? <span>P {r.proteinas}g</span> : null}
+                              {r.carboidratos ? <span>C {r.carboidratos}g</span> : null}
+                              {r.gorduras ? <span>G {r.gorduras}g</span> : null}
+                            </div>
+                            {r.micros && r.micros.length > 0 ? (
+                              <p className="text-xs text-muted-foreground/80 mt-1">
+                                {r.micros.map((m) => `${m.nome} ${m.quantidade}${m.unidade}`).join(' · ')}
+                              </p>
                             ) : null}
-                          </p>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                            {r.descricao}
-                          </p>
-                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground mt-1">
-                            {r.calorias ? <span>{r.calorias} kcal</span> : null}
-                            {r.proteinas ? <span>P {r.proteinas}g</span> : null}
-                            {r.carboidratos ? <span>C {r.carboidratos}g</span> : null}
-                            {r.gorduras ? <span>G {r.gorduras}g</span> : null}
                           </div>
                         </div>
                         <Button
