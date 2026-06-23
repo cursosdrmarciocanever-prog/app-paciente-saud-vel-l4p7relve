@@ -166,6 +166,11 @@ export function PrateleiraInjetaveis() {
                   )}
                 </div>
                 <CardTitle className="text-lg mt-2">{item.produto}</CardTitle>
+                {(item.tipo || '').toLowerCase().includes('horm') && (
+                  <p className="mt-1 text-xs font-medium text-destructive">
+                    Somente sob prescrição médica. Medicamento controlado.
+                  </p>
+                )}
               </CardHeader>
               <CardContent className="flex-1 space-y-3">
                 <p className="text-sm text-muted-foreground leading-relaxed">
