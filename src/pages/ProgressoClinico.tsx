@@ -261,6 +261,19 @@ export default function ProgressoClinico() {
     [fotos],
   )
 
+  const examesItens: ItemComparacao[] = useMemo(
+    () =>
+      [...exames]
+        .sort((a, b) => new Date(a.data_exame).getTime() - new Date(b.data_exame).getTime())
+        .map((ex) => ({
+          id: ex.id,
+          titulo: `${ex.nome_exame} — ${new Date(ex.data_exame).toLocaleDateString('pt-BR')}`,
+          url: getFileUrl('exames_pdf', ex.id, ex.arquivo),
+          isPdf: isPdf(ex.arquivo),
+        })),
+    [exames],
+  )
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -384,6 +397,12 @@ export default function ProgressoClinico() {
         </TabsContent>
 
         <TabsContent value="exames" className="space-y-6 mt-6">
+          <Tabs defaultValue="exames-lista">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="exames-lista">Exames</TabsTrigger>
+              <TabsTrigger value="exames-comparar">Antes e Depois</TabsTrigger>
+            </TabsList>
+            <TabsContent value="exames-lista" className="space-y-6 mt-4">
           <Card>
             <CardHeader>
               <CardTitle>Enviar Exame</CardTitle>
@@ -483,6 +502,11 @@ export default function ProgressoClinico() {
               <p className="text-muted-foreground">Nenhum exame enviado ainda.</p>
             )}
           </div>
+            </TabsContent>
+            <TabsContent value="exames-comparar" className="mt-4">
+              <ComparadorAntesDepois itens={examesItens} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         <TabsContent value="bioimpedancia" className="space-y-6 mt-6">
