@@ -170,7 +170,14 @@ export function CatalogoTable({ hideHeader }: { hideHeader?: boolean } = {}) {
                 ) : (
                   filtered.map((item) => (
                     <TableRow key={item.id} className="hover:bg-slate-50/50">
-                      <TableCell className="font-medium text-slate-900">{item.produto}</TableCell>
+                      <TableCell className="font-medium text-slate-900">
+                        {item.produto}
+                        {(item.tipo || '').toLowerCase().includes('horm') && (
+                          <span className="block mt-1 text-xs font-medium text-destructive">
+                            Somente sob prescrição médica. Medicamento controlado.
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {item.tipo ? (
                           <Badge variant="outline" className="font-normal">
