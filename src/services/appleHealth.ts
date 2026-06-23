@@ -1,5 +1,5 @@
 import { Capacitor } from '@capacitor/core'
-import { Health } from '@flomentumsolutions/capacitor-health-extended'
+import { Health, type QueryLatestSampleResponse } from '@flomentumsolutions/capacitor-health-extended'
 import pb from '@/lib/pocketbase/client'
 
 // Disponível apenas no app nativo iOS (Apple Watch via HealthKit).
@@ -11,6 +11,56 @@ export const healthDisponivel = async (): Promise<boolean> => {
   } catch (_) {
     return false
   }
+}
+
+// Todas as permissões de LEITURA que o app usa. Pedimos TODAS de uma vez só:
+// vários requestHealthPermissions simultâneos TRAVAM o HealthKit no iOS (após
+// conceder o primeiro, os outros nunca retornam).
+const PERMISSOES_LEITURA = [
+  'READ_STEPS',
+  'READ_ACTIVE_CALORIES',
+  'READ_WORKOUTS',
+  'READ_HEART_RATE',
+  'READ_RESTING_HEART_RATE',
+  'READ_SLEEP',
+] as const
+
+let permissoesPromise: Promise<void> | null = null
+// Solicita as permissões UMA vez por sessão (chamadas concorrentes compartilham
+// a mesma promise → um único pedido nativo).
+const garantirPermissoes = (): Promise<void> => {
+  if (!permissoesPromise) {
+    permissoesPromise = Health.requestHealthPermissions({ permissions: [...PERMISSOES_LEITURA] })
+      .then(() => undefined)
+      .catch(() => undefined)
+  }
+  return permissoesPromise
+}
+
+// Evita que uma chamada nativa que não retorna deixe a UI presa em "carregando".
+function comTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise((resolve) => {
+    let pronto = false
+    const t = setTimeout(() => {
+      if (!pronto) {
+        pronto = true
+        resolve(fallback)
+      }
+    }, ms)
+    p.then((v) => {
+      if (!pronto) {
+        pronto = true
+        clearTimeout(t)
+        resolve(v)
+      }
+    }).catch(() => {
+      if (!pronto) {
+        pronto = true
+        clearTimeout(t)
+        resolve(fallback)
+      }
+    })
+  })
 }
 
 // Mapeia o tipo de treino do HealthKit para os tipos do nosso app.
@@ -40,9 +90,7 @@ export interface ResumoDiario {
 export const getResumoHoje = async (): Promise<ResumoDiario | null> => {
   if (!(await healthDisponivel())) return null
 
-  await Health.requestHealthPermissions({
-    permissions: ['READ_STEPS', 'READ_ACTIVE_CALORIES'],
-  })
+  await garantirPermissoes()
 
   const inicio = new Date()
   inicio.setHours(0, 0, 0, 0)
@@ -50,12 +98,16 @@ export const getResumoHoje = async (): Promise<ResumoDiario | null> => {
 
   const somar = async (dataType: 'steps' | 'active-calories'): Promise<number> => {
     try {
-      const { aggregatedData } = await Health.queryAggregated({
-        startDate: inicio.toISOString(),
-        endDate: fim.toISOString(),
-        dataType,
-        bucket: 'day',
-      })
+      const { aggregatedData } = await comTimeout(
+        Health.queryAggregated({
+          startDate: inicio.toISOString(),
+          endDate: fim.toISOString(),
+          dataType,
+          bucket: 'day',
+        }),
+        12000,
+        { aggregatedData: [] },
+      )
       return Math.round(aggregatedData.reduce((acc, s) => acc + (s.value || 0), 0))
     } catch (_) {
       return 0
@@ -77,7 +129,7 @@ export interface DiaPassos {
 export const getHistoricoPassos = async (dias = 7): Promise<DiaPassos[]> => {
   if (!(await healthDisponivel())) return []
 
-  await Health.requestHealthPermissions({ permissions: ['READ_STEPS'] })
+  await garantirPermissoes()
 
   const fim = new Date()
   fim.setHours(23, 59, 59, 999)
@@ -94,12 +146,16 @@ export const getHistoricoPassos = async (dias = 7): Promise<DiaPassos[]> => {
   }
 
   try {
-    const { aggregatedData } = await Health.queryAggregated({
-      startDate: inicio.toISOString(),
-      endDate: fim.toISOString(),
-      dataType: 'steps',
-      bucket: 'day',
-    })
+    const { aggregatedData } = await comTimeout(
+      Health.queryAggregated({
+        startDate: inicio.toISOString(),
+        endDate: fim.toISOString(),
+        dataType: 'steps',
+        bucket: 'day',
+      }),
+      12000,
+      { aggregatedData: [] },
+    )
     for (const s of aggregatedData) {
       const dia = new Date(s.startDate).toISOString().slice(0, 10)
       if (mapa.has(dia)) mapa.set(dia, Math.round((mapa.get(dia) || 0) + (s.value || 0)))
@@ -116,8 +172,12 @@ export const getHistoricoPassos = async (dias = 7): Promise<DiaPassos[]> => {
 export const getFcRepouso = async (): Promise<number | null> => {
   if (!(await healthDisponivel())) return null
   try {
-    await Health.requestHealthPermissions({ permissions: ['READ_RESTING_HEART_RATE'] })
-    const r = await Health.queryLatestSample({ dataType: 'resting-heart-rate' })
+    await garantirPermissoes()
+    const r = await comTimeout<QueryLatestSampleResponse | null>(
+      Health.queryLatestSample({ dataType: 'resting-heart-rate' }),
+      12000,
+      null,
+    )
     return r && typeof r.value === 'number' && r.value > 0 ? Math.round(r.value) : null
   } catch (_) {
     return null
@@ -135,8 +195,12 @@ export interface ResumoSono {
 export const getSono = async (): Promise<ResumoSono | null> => {
   if (!(await healthDisponivel())) return null
   try {
-    await Health.requestHealthPermissions({ permissions: ['READ_SLEEP'] })
-    const r = await Health.queryLatestSample({ dataType: 'sleep' })
+    await garantirPermissoes()
+    const r = await comTimeout<QueryLatestSampleResponse | null>(
+      Health.queryLatestSample({ dataType: 'sleep' }),
+      12000,
+      null,
+    )
     if (!r || !r.timestamp) return null
     const inicio = r.timestamp
     const fim = r.endTimestamp || r.timestamp
@@ -159,21 +223,23 @@ export const sincronizarAppleWatch = async (
   usuarioId: string,
   dias = 90,
 ): Promise<ResultadoSync> => {
-  await Health.requestHealthPermissions({
-    permissions: ['READ_WORKOUTS', 'READ_ACTIVE_CALORIES', 'READ_HEART_RATE', 'READ_STEPS'],
-  })
+  await garantirPermissoes()
 
   const fim = new Date()
   const inicio = new Date()
   inicio.setDate(inicio.getDate() - dias)
 
-  const { workouts } = await Health.queryWorkouts({
-    startDate: inicio.toISOString(),
-    endDate: fim.toISOString(),
-    includeHeartRate: false,
-    includeRoute: false,
-    includeSteps: false,
-  })
+  const { workouts } = await comTimeout(
+    Health.queryWorkouts({
+      startDate: inicio.toISOString(),
+      endDate: fim.toISOString(),
+      includeHeartRate: false,
+      includeRoute: false,
+      includeSteps: false,
+    }),
+    15000,
+    { workouts: [] },
+  )
 
   // IDs já importados deste usuário (para não duplicar)
   const existentes = await pb.collection('atividades_fisicas').getFullList({
