@@ -91,7 +91,7 @@ export default function Nutricao() {
         </TabsList>
 
         <TabsContent value="diario" className="mt-6">
-          <Alimentacao />
+          <Alimentacao premium={!!temAssinatura} />
         </TabsContent>
 
         <TabsContent value="dietas" className="mt-6">

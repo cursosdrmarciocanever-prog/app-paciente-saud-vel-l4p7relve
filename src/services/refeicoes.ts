@@ -15,6 +15,9 @@ export interface Refeicao {
   tipo_refeicao: TipoRefeicao
   descricao: string
   calorias?: number
+  proteinas?: number
+  carboidratos?: number
+  gorduras?: number
   horario?: string
   created: string
   updated: string
