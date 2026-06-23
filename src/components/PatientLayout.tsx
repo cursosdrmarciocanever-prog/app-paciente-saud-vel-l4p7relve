@@ -33,6 +33,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import logoUrl from '@/assets/captura-de-tela-2026-05-06-as-05.37.05-68d31.png'
+import { InstalarAppBanner } from '@/components/InstalarAppBanner'
 
 export function PatientLayout() {
   const { signOut } = useAuth()
@@ -130,6 +131,7 @@ export function PatientLayout() {
             </div>
           </header>
           <main className="flex-1 overflow-y-auto p-4 md:p-8">
+            <InstalarAppBanner />
             <Outlet />
           </main>
         </div>
