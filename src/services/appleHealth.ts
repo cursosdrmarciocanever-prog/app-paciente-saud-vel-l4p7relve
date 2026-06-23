@@ -66,6 +66,51 @@ export const getResumoHoje = async (): Promise<ResumoDiario | null> => {
   return { passos, calorias }
 }
 
+export interface DiaPassos {
+  dia: string // YYYY-MM-DD
+  passos: number
+}
+
+// Lê o histórico de passos dos últimos `dias` dias (um balde por dia), para
+// montar um mini-gráfico. Cobre qualquer relógio sincronizado ao Apple Saúde
+// (Apple Watch, Amazfit/Zepp, Garmin, etc.).
+export const getHistoricoPassos = async (dias = 7): Promise<DiaPassos[]> => {
+  if (!(await healthDisponivel())) return []
+
+  await Health.requestHealthPermissions({ permissions: ['READ_STEPS'] })
+
+  const fim = new Date()
+  fim.setHours(23, 59, 59, 999)
+  const inicio = new Date()
+  inicio.setDate(inicio.getDate() - (dias - 1))
+  inicio.setHours(0, 0, 0, 0)
+
+  // Esqueleto com todos os dias zerados (garante a sequência mesmo sem dados).
+  const mapa = new Map<string, number>()
+  for (let i = 0; i < dias; i++) {
+    const d = new Date(inicio)
+    d.setDate(inicio.getDate() + i)
+    mapa.set(d.toISOString().slice(0, 10), 0)
+  }
+
+  try {
+    const { aggregatedData } = await Health.queryAggregated({
+      startDate: inicio.toISOString(),
+      endDate: fim.toISOString(),
+      dataType: 'steps',
+      bucket: 'day',
+    })
+    for (const s of aggregatedData) {
+      const dia = new Date(s.startDate).toISOString().slice(0, 10)
+      if (mapa.has(dia)) mapa.set(dia, Math.round((mapa.get(dia) || 0) + (s.value || 0)))
+    }
+  } catch (_) {
+    /* sem dados — devolve o esqueleto zerado */
+  }
+
+  return Array.from(mapa.entries()).map(([dia, passos]) => ({ dia, passos }))
+}
+
 // Pede permissão, lê os treinos dos últimos `dias` e cria os que ainda não existem.
 export const sincronizarAppleWatch = async (
   usuarioId: string,
