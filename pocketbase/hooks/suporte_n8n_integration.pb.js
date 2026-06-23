@@ -71,6 +71,99 @@ onRecordAfterCreateSuccess((e) => {
     $app.logger().error('Error building historico', 'error', String(err))
   }
 
+  // Trava de uso: agentes ESPECIALISTAS (pagos) têm limite mensal de mensagens.
+  // O agente 'geral' (grátis) não é limitado.
+  const ESPECIALISTAS = ['nutricional', 'exames', 'medico']
+  if (ESPECIALISTAS.indexOf(agente) >= 0) {
+    const usuarioId = record.getString('usuario_id')
+    const mes = new Date().toISOString().slice(0, 7) // "YYYY-MM"
+
+    // plano do paciente (assinatura ativa) → fallback "default"
+    let plano = 'default'
+    try {
+      const ass = $app.findRecordsByFilter(
+        'assinaturas',
+        'usuario_id = "' + usuarioId + '" && (status = "ativo" || status = "active" || status = "ativa")',
+        '-created',
+        1,
+        0,
+      )
+      if (ass && ass.length > 0) {
+        const p = String(ass[0].getString('plano') || '').trim()
+        if (p) plano = p
+      }
+    } catch (err) {
+      $app.logger().error('SUPORTE limite assinatura', 'error', String(err))
+    }
+
+    let limiteMsgs = 150 // fallback
+    try {
+      let lim = $app.findRecordsByFilter('limites_plano', 'plano = "' + plano + '"', '', 1, 0)
+      if (!lim || lim.length === 0) lim = $app.findRecordsByFilter('limites_plano', 'plano = "default"', '', 1, 0)
+      if (lim && lim.length > 0) limiteMsgs = Number(lim[0].getInt('limite_mensagens'))
+    } catch (err) {
+      $app.logger().error('SUPORTE limite lookup', 'error', String(err))
+    }
+
+    let usoRec = null
+    let msgsUsadas = 0
+    try {
+      const recs = $app.findRecordsByFilter(
+        'uso_ia',
+        'usuario_id = "' + usuarioId + '" && mes = "' + mes + '"',
+        '',
+        1,
+        0,
+      )
+      if (recs && recs.length > 0) {
+        usoRec = recs[0]
+        msgsUsadas = Number(usoRec.getInt('mensagens_ia')) || 0
+      }
+    } catch (err) {
+      $app.logger().error('SUPORTE uso lookup', 'error', String(err))
+    }
+
+    if (limiteMsgs > 0 && msgsUsadas >= limiteMsgs) {
+      // Limite atingido → NÃO chama o n8n; cria uma resposta automática.
+      // (A mensagem nova tem remetente 'agente_ia', então este hook a ignora — sem loop.)
+      try {
+        const col = $app.findCollectionByNameOrId('mensagens_suporte')
+        const aviso = new Record(col)
+        aviso.set('conversa_id', record.getString('conversa_id'))
+        aviso.set('usuario_id', usuarioId)
+        aviso.set('remetente', 'agente_ia')
+        aviso.set(
+          'conteudo',
+          'Você atingiu o limite de ' +
+            limiteMsgs +
+            ' mensagens com os assistentes especialistas neste mês. O limite renova no início do próximo mês.',
+        )
+        $app.save(aviso)
+      } catch (err) {
+        $app.logger().error('SUPORTE aviso limite', 'error', String(err))
+      }
+      return e.next()
+    }
+
+    // Dentro do limite → soma +1 (cria a linha do mês se preciso).
+    try {
+      if (usoRec) {
+        usoRec.set('mensagens_ia', msgsUsadas + 1)
+        $app.save(usoRec)
+      } else {
+        const col = $app.findCollectionByNameOrId('uso_ia')
+        const novo = new Record(col)
+        novo.set('usuario_id', usuarioId)
+        novo.set('mes', mes)
+        novo.set('mensagens_ia', 1)
+        novo.set('fotos_analisadas', 0)
+        $app.save(novo)
+      }
+    } catch (err) {
+      $app.logger().error('SUPORTE incremento uso', 'error', String(err))
+    }
+  }
+
   // Enviar os dados da mensagem para o n8n em background
   try {
     $http.send({

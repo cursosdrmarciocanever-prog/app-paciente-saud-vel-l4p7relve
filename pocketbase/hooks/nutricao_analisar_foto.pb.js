@@ -13,6 +13,7 @@ routerAdd(
 
     // Gate premium: precisa de assinatura ativa (mesma regra do assistente nutri).
     let temAssinatura = false
+    let plano = 'default'
     try {
       const assinaturas = $app.findRecordsByFilter(
         'assinaturas',
@@ -21,12 +22,57 @@ routerAdd(
         1,
         0,
       )
-      if (assinaturas && assinaturas.length > 0) temAssinatura = true
+      if (assinaturas && assinaturas.length > 0) {
+        temAssinatura = true
+        const p = String(assinaturas[0].getString('plano') || '').trim()
+        if (p) plano = p
+      }
     } catch (err) {
       $app.logger().error('NUTRI_FOTO assinatura check', 'error', String(err))
     }
     if (!temAssinatura) {
       return e.json(403, { erro: 'Recurso exclusivo para assinantes' })
+    }
+
+    // Trava de uso: limite mensal de fotos do plano (bloqueia ANTES de gastar IA).
+    const mes = new Date().toISOString().slice(0, 7) // "YYYY-MM"
+    let limiteFotos = 60 // fallback se limites_plano não estiver acessível
+    try {
+      let lim = $app.findRecordsByFilter('limites_plano', 'plano = "' + plano + '"', '', 1, 0)
+      if (!lim || lim.length === 0) {
+        lim = $app.findRecordsByFilter('limites_plano', 'plano = "default"', '', 1, 0)
+      }
+      if (lim && lim.length > 0) limiteFotos = Number(lim[0].getInt('limite_fotos'))
+    } catch (err) {
+      $app.logger().error('NUTRI_FOTO limite lookup', 'error', String(err))
+    }
+
+    // Lê (ou prepara) o contador do mês.
+    let usoRec = null
+    let fotosUsadas = 0
+    try {
+      const recs = $app.findRecordsByFilter(
+        'uso_ia',
+        'usuario_id = "' + auth.id + '" && mes = "' + mes + '"',
+        '',
+        1,
+        0,
+      )
+      if (recs && recs.length > 0) {
+        usoRec = recs[0]
+        fotosUsadas = Number(usoRec.getInt('fotos_analisadas')) || 0
+      }
+    } catch (err) {
+      $app.logger().error('NUTRI_FOTO uso lookup', 'error', String(err))
+    }
+
+    if (limiteFotos > 0 && fotosUsadas >= limiteFotos) {
+      return e.json(429, {
+        erro:
+          'Você atingiu o limite de ' +
+          limiteFotos +
+          ' análises de foto deste mês no seu plano. O limite renova no próximo mês.',
+      })
     }
 
     const body = e.requestInfo().body || {}
@@ -134,6 +180,24 @@ routerAdd(
         if (micros.length >= 10) break
       }
     }
+    // Análise bem-sucedida → soma +1 no contador do mês (cria a linha se preciso).
+    try {
+      if (usoRec) {
+        usoRec.set('fotos_analisadas', fotosUsadas + 1)
+        $app.save(usoRec)
+      } else {
+        const col = $app.findCollectionByNameOrId('uso_ia')
+        const novo = new Record(col)
+        novo.set('usuario_id', auth.id)
+        novo.set('mes', mes)
+        novo.set('mensagens_ia', 0)
+        novo.set('fotos_analisadas', 1)
+        $app.save(novo)
+      }
+    } catch (err) {
+      $app.logger().error('NUTRI_FOTO incremento uso', 'error', String(err))
+    }
+
     return e.json(200, {
       descricao: String(parsed.descricao || '').trim(),
       calorias: num(parsed.calorias),
