@@ -13,6 +13,7 @@ import {
   Syringe,
   MessageSquare,
   HeartPulse,
+  Gauge,
 } from 'lucide-react'
 import { ProtectedAdminRoute } from '@/components/ProtectedAdminRoute'
 import { useAuth } from '@/hooks/use-auth'
@@ -37,6 +38,7 @@ const navItems = [
   { name: 'Bioimpedância', path: '/admin/bioimpedancia', icon: Activity },
   { name: 'Injetáveis', path: '/admin/injetaveis', icon: Syringe },
   { name: 'Suporte', path: '/admin/suporte', icon: MessageSquare },
+  { name: 'Limites de IA', path: '/admin/limites', icon: Gauge },
 ]
 
 function getTitle(pathname: string) {
@@ -49,6 +51,7 @@ function getTitle(pathname: string) {
   if (pathname.includes('/bioimpedancia')) return 'Gestão de Bioimpedância'
   if (pathname.includes('/injetaveis')) return 'Catálogo de Injetáveis'
   if (pathname.includes('/suporte')) return 'Suporte'
+  if (pathname.includes('/limites')) return 'Limites de IA'
   return 'Painel Administrativo'
 }
 

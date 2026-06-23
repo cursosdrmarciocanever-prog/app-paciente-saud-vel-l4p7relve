@@ -14,6 +14,7 @@ import {
   deletarRefeicao,
 } from '@/services/refeicoes'
 import { analisarFotoPrato, prepararFotoParaUpload, type AnaliseFoto } from '@/services/nutricaoFoto'
+import { UsoIaIndicador } from '@/components/UsoIaIndicador'
 import pb from '@/lib/pocketbase/client'
 import { comToken } from '@/lib/pocketbase/fileToken'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -89,6 +90,7 @@ export default function Alimentacao({ premium = false }: { premium?: boolean }) 
   const [aGorduras, setAGorduras] = useState('')
   const [aMicros, setAMicros] = useState<Micronutriente[]>([])
   const [aFotoFile, setAFotoFile] = useState<File | null>(null)
+  const [usoRefresh, setUsoRefresh] = useState(0)
 
   const fetch = async () => {
     if (!user) return
@@ -235,6 +237,7 @@ export default function Alimentacao({ premium = false }: { premium?: boolean }) 
       setConfirmOpen(false)
       setAFotoFile(null)
       setAMicros([])
+      setUsoRefresh((n) => n + 1)
       fetch()
     } catch (_) {
       toast({ title: 'Erro', description: 'Não foi possível salvar a refeição.', variant: 'destructive' })
@@ -344,6 +347,8 @@ export default function Alimentacao({ premium = false }: { premium?: boolean }) 
           </Dialog>
         </div>
       </div>
+
+      <UsoIaIndicador tipo="fotos" refreshKey={usoRefresh} />
 
       {/* Card de confirmação da análise por foto (estimativa editável) */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>

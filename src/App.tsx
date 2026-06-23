@@ -34,6 +34,7 @@ import Conteudos from './pages/admin/Conteudos'
 import BioimpedanciaAdmin from './pages/admin/Bioimpedancia'
 import AdminInjetaveis from './pages/admin/Injetaveis'
 import AdminSuporte from './pages/admin/Suporte'
+import AdminLimites from './pages/admin/Limites'
 import AgendamentoPaciente from './pages/Agendamento'
 import ConfirmarAgendamento from './pages/ConfirmarAgendamento'
 import SucessoAgendamento from './pages/SucessoAgendamento'
@@ -282,6 +283,7 @@ const App = () => (
             <Route path="bioimpedancia" element={<BioimpedanciaAdmin />} />
             <Route path="injetaveis" element={<AdminInjetaveis />} />
             <Route path="suporte" element={<AdminSuporte />} />
+            <Route path="limites" element={<AdminLimites />} />
           </Route>
 
           <Route path="*" element={<NotFound />} />

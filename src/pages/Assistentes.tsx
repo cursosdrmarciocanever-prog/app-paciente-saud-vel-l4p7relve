@@ -8,6 +8,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useToast } from '@/hooks/use-toast'
 import { getAssinaturas } from '@/services/assinaturas'
 import { criarDieta } from '@/services/dietas'
+import { UsoIaIndicador } from '@/components/UsoIaIndicador'
 import SuporteChat from './SuporteChat'
 
 export default function Assistentes() {
@@ -73,6 +74,7 @@ export default function Assistentes() {
   return (
     <div className="space-y-6">
       <Cabecalho />
+      <UsoIaIndicador tipo="mensagens" />
       <Tabs defaultValue="nutricional" className="w-full">
         <TabsList className="w-full grid grid-cols-3">
           <TabsTrigger value="nutricional" className="gap-1.5">
