@@ -52,9 +52,10 @@ onRecordAfterCreateSuccess((e) => {
   const dataFormatada = data.split(' ')[0] // simplistic format for SMS/Email
 
   // 1. Send SMS via Twilio API
-  const twilioSid = $secrets.get('TWILIO_ACCOUNT_SID')
-  const twilioToken = $secrets.get('TWILIO_AUTH_TOKEN')
-  const twilioFrom = $secrets.get('TWILIO_FROM_NUMBER')
+  // PocketBase self-hosted: usar $os.getenv (NÃO $secrets, que não existe).
+  const twilioSid = $os.getenv('TWILIO_ACCOUNT_SID')
+  const twilioToken = $os.getenv('TWILIO_AUTH_TOKEN')
+  const twilioFrom = $os.getenv('TWILIO_FROM_NUMBER')
 
   if (twilioSid && twilioToken && telefone) {
     try {
@@ -89,7 +90,7 @@ onRecordAfterCreateSuccess((e) => {
   }
 
   // 2. Send Email via Compatible API (Resend)
-  const resendKey = $secrets.get('RESEND_API_KEY')
+  const resendKey = $os.getenv('RESEND_API_KEY')
   if (resendKey && email) {
     try {
       const htmlContent = `
@@ -118,7 +119,7 @@ onRecordAfterCreateSuccess((e) => {
           Authorization: 'Bearer ' + resendKey,
         },
         body: JSON.stringify({
-          from: 'Clínica Canever <no-reply@clinicacanever.com>',
+          from: $os.getenv('RESEND_FROM') || 'Clínica Canever <no-reply@clinicacanever.com.br>',
           to: [email],
           subject: 'Consulta Agendada - Clínica Canever',
           html: htmlContent,
